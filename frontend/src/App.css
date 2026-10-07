@@ -144,3 +144,30 @@ header h1 { font-size: 2.4rem; margin: 0; font-weight: 600; }
 .group-title { font-weight: 600; display: flex; justify-content: space-between; }
 .group-title span { background: var(--land); border-radius: 99px; padding: 0 10px; font-size: 0.85rem; font-weight: 500; }
 .visited-names { color: var(--muted); margin-top: 6px; font-size: 0.95rem; }
+
+.stat-card.clickable { cursor: pointer; transition: transform 0.15s; }
+.stat-card.clickable:hover { transform: translateY(-3px); }
+.stat-arrow { margin-left: auto; font-size: 1.4rem; color: var(--muted); }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(45, 42, 50, 0.45);
+  display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100;
+}
+.modal {
+  background: var(--card); border-radius: 24px; width: 100%; max-width: 440px;
+  max-height: 80vh; display: flex; flex-direction: column; box-shadow: var(--shadow);
+}
+.modal-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 18px 22px; border-bottom: 2px solid var(--land);
+}
+.modal-head h3 { margin: 0; font-weight: 600; }
+.modal-close {
+  border: none; background: var(--land); width: 34px; height: 34px;
+  border-radius: 50%; font-size: 1.3rem; cursor: pointer; color: var(--text);
+}
+.modal-list { list-style: none; margin: 0; padding: 8px 22px 18px; overflow-y: auto; }
+.modal-list li { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--land); }
+.modal-list li:last-child { border-bottom: none; }
+.modal-sub { color: var(--muted); }
+.modal-empty { text-align: center; color: var(--muted); padding: 24px; margin: 0; }

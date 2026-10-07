@@ -5,6 +5,7 @@ import WorldMap from './components/WorldMap'
 import TurkeyMap from './components/TurkeyMap'
 import CountryPanel from './components/CountryPanel'
 import VisitedCities from './components/VisitedCities'
+import ListModal from './components/ListModal'
 
 export default function App() {
   const [tab, setTab] = useState('turkey')
@@ -13,6 +14,7 @@ export default function App() {
   const [foreignCities, setForeignCities] = useState([])
   const [selectedCountry, setSelectedCountry] = useState(null) // { iso, name }
   const [stats, setStats] = useState(null)
+  const [openList, setOpenList] = useState(null) // 'cities' | 'countries' | 'foreign'
   const [error, setError] = useState('')
 
   const refreshStats = () => api.getStats().then(setStats)
@@ -96,7 +98,9 @@ export default function App() {
 
       {error && <div className="error">{error}</div>}
 
-      <StatsBar stats={stats} />
+      <StatsBar stats={stats} onOpenList={setOpenList} />
+
+      {openList && <ListModal type={openList} onClose={() => setOpenList(null)} />}
 
       <div className="tabs">
         <button className={tab === 'turkey' ? 'active' : ''} onClick={() => setTab('turkey')}>🇹🇷 Türkiye</button>
