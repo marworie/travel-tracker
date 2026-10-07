@@ -20,9 +20,10 @@ public class WorldCityRepository : IWorldCityRepository
 
     private IDbConnection CreateConnection() => new SqlConnection(_connectionString);
 
-    // Yazılan harflerle başlayan en kalabalık 10 şehir
+    // Ülkedeki şehirlerden, yazılan harflerle başlayan en kalabalık 10 tanesi
     public async Task<IEnumerable<string>> SearchAsync(string countryIso, string? query)
     {
+        // LIKE içinde özel anlamı olan karakterleri etkisiz hale getir
         var q = (query ?? "").Trim()
             .Replace("[", "[[]")
             .Replace("%", "[%]")

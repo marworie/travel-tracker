@@ -39,5 +39,15 @@ export const api = {
   toggleUnescoWanted: (id) => request(`/unesco/${id}/wanted`, { method: 'POST' }),
   toggleUnescoVisited: (id) => request(`/unesco/${id}/visited`, { method: 'POST' }),
 
+  getTrips: () => request('/trips'),
+  getTrip: (id) => request(`/trips/${id}`),
+  createTrip: (trip) => request('/trips', { method: 'POST', body: JSON.stringify(trip) }),
+  deleteTrip: (id) => fetch(`${API_URL}/trips/${id}`, { method: 'DELETE' }),
+  addStop: (tripId, stop) =>
+    request(`/trips/${tripId}/stops`, { method: 'POST', body: JSON.stringify(stop) }),
+  deleteStop: (stopId) => fetch(`${API_URL}/trips/stops/${stopId}`, { method: 'DELETE' }),
+  moveStop: (stopId, direction) =>
+    fetch(`${API_URL}/trips/stops/${stopId}/move?direction=${direction}`, { method: 'POST' }),
+
   getStats: () => request('/stats'),
 }

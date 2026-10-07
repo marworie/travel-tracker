@@ -5,9 +5,10 @@ import WorldMap from './components/WorldMap'
 import TurkeyMap from './components/TurkeyMap'
 import CountryPanel from './components/CountryPanel'
 import VisitedCities from './components/VisitedCities'
+import ListPage from './pages/ListPage'
+import TripsPage from './pages/TripsPage'
 import HomePage from './pages/HomePage'
 import ExplorePage from './pages/ExplorePage'
-import ListPage from './pages/ListPage'
 
 export default function App() {
   const [page, setPage] = useState('home') // 'home' | 'turkey' | 'world' | 'explore'
@@ -139,6 +140,8 @@ export default function App() {
         )}
 
         {!openList && page === 'explore' && <ExplorePage />}
+
+        {!openList && page === 'trips' && <TripsPage />}
       </main>
     </div>
   )

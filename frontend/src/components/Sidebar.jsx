@@ -13,6 +13,13 @@ const ICONS = {
       <path d="M3.5 12h17M12 3.5c2.4 2.4 3.4 5.4 3.4 8.5s-1 6.1-3.4 8.5c-2.4-2.4-3.4-5.4-3.4-8.5s1-6.1 3.4-8.5z" />
     </>
   ),
+  trips: (
+    <>
+      <circle cx="6" cy="18" r="2" />
+      <circle cx="18" cy="6" r="2" />
+      <path d="M8 18h7.5a3.5 3.5 0 0 0 0-7h-7a3.5 3.5 0 0 1 0-7H16" />
+    </>
+  ),
   explore: (
     <>
       <circle cx="12" cy="12" r="8.5" />
@@ -26,6 +33,7 @@ const PAGES = [
   { id: 'turkey', label: 'Türkiye' },
   { id: 'world', label: 'Dünya' },
   { id: 'explore', label: 'Keşfet' },
+  { id: 'trips', label: 'Gezi planları' },
 ]
 
 export default function Sidebar({ page, onChange }) {

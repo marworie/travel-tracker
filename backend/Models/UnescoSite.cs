@@ -4,7 +4,7 @@ public class UnescoSite
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string Category { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty; // cultural / natural / mixed
     public short YearInscribed { get; set; }
     public decimal Latitude { get; set; }
     public decimal Longitude { get; set; }
@@ -12,7 +12,7 @@ public class UnescoSite
     public bool InDanger { get; set; }
     public bool IsWanted { get; set; }
     public bool IsVisited { get; set; }
-    public string? CountryIso { get; set; }
+    public string? CountryIso { get; set; } // sadece "saved" listesinde dolu
 }
 
 public class UnescoCountry

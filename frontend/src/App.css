@@ -377,55 +377,34 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 .unesco-actions button.on-wanted { background: var(--marker-soft); border-color: var(--marker); color: #6a4d00; }
 .unesco-actions button.on-visited { background: var(--visited); border-color: var(--visited); color: #fff; }
 
-/* ===== Liste penceresi ===== */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(28, 37, 33, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  z-index: 100;
-}
-.modal {
-  background: var(--surface);
-  border-radius: 8px;
-  width: 100%;
-  max-width: 420px;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 12px 40px rgba(28, 37, 33, 0.25);
-}
-.modal-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--line);
-}
-.modal-head h3 { margin: 0; font-family: var(--condensed); font-weight: 600; font-size: 1.25rem; }
-.modal-close {
+/* ===== Liste sayfası ===== */
+.back-btn {
   border: none;
-  background: transparent;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
+  background: none;
   color: var(--muted);
-  padding: 0 4px;
+  font-size: 0.9rem;
+  padding: 0;
+  margin-bottom: 14px;
+  cursor: pointer;
 }
-.modal-close:hover { color: var(--ink); }
-.modal-list { list-style: none; margin: 0; padding: 4px 20px 14px; overflow-y: auto; }
-.modal-list li {
+.back-btn:hover { color: var(--ink); }
+.list-page {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  columns: 3 220px;
+  column-gap: 32px;
+  border-top: 1px solid var(--line);
+}
+.list-page li {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   padding: 9px 0;
   border-bottom: 1px solid var(--line);
+  break-inside: avoid;
 }
-.modal-list li:last-child { border-bottom: none; }
-.modal-sub { color: var(--muted); font-variant-numeric: tabular-nums; }
-.modal-empty { text-align: center; color: var(--muted); padding: 24px; margin: 0; }
+.list-sub { color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* ===== Mobil ===== */
 @media (max-width: 800px) {
@@ -446,17 +425,115 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   * { transition: none !important; }
 }
 
-.back-btn {
-  border: none; background: none; color: var(--muted);
-  font-size: 0.9rem; padding: 0; margin-bottom: 14px; cursor: pointer;
+/* ===== Gezi planları ===== */
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--muted); }
+.field.grow { flex: 1; min-width: 180px; }
+.field input, .field select {
+  font-family: inherit;
+  font-size: 0.95rem;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--ink);
 }
-.back-btn:hover { color: var(--ink); }
-.list-page {
-  list-style: none; margin: 0; padding: 0;
-  columns: 3 220px; column-gap: 32px; border-top: 1px solid var(--line);
+.field input:focus, .field select:focus { outline: none; border-color: var(--selected); }
+.primary-btn {
+  align-self: flex-end;
+  border: none;
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 10px 18px;
+  font-size: 0.95rem;
+  cursor: pointer;
 }
-.list-page li {
-  display: flex; justify-content: space-between; gap: 12px;
-  padding: 9px 0; border-bottom: 1px solid var(--line); break-inside: avoid;
+.primary-btn:hover { background: #33403a; }
+.form-error { color: var(--danger); margin: 8px 0 0; font-size: 0.9rem; }
+
+.trip-form, .stop-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+
+.trip-list { border-top: 1px solid var(--line); }
+.trip-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 24px;
+  align-items: baseline;
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  padding: 13px 4px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.95rem;
 }
-.list-sub { color: var(--muted); font-variant-numeric: tabular-nums; }
+.trip-row:hover .trip-title { text-decoration: underline; }
+.trip-title { font-weight: 500; }
+.trip-dates, .trip-stops { color: var(--muted); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+
+.trip-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.text-danger-btn {
+  border: none;
+  background: none;
+  color: var(--danger);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 6px 0;
+}
+.text-danger-btn:hover { text-decoration: underline; }
+
+/* Duraklar: gerçekten sıralı oldukları için numaralı rota */
+.stop-list { list-style: none; margin: 0 0 8px; padding: 0; }
+.stop {
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  gap: 14px;
+  align-items: start;
+  padding: 12px 0;
+  position: relative;
+}
+.stop:not(:last-child)::after {
+  /* duraklar arasındaki rota çizgisi */
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 42px;
+  bottom: -8px;
+  border-left: 2px dotted var(--visited);
+}
+.stop-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--visited);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--condensed);
+  font-weight: 600;
+}
+.stop-body { padding-top: 4px; }
+.stop-place { font-weight: 500; }
+.stop-country { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.stop-meta { color: var(--muted); font-size: 0.9rem; margin-top: 2px; }
+.stop-actions { display: flex; gap: 4px; }
+.stop-actions button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.stop-actions button:hover:not(:disabled) { border-color: var(--muted); }
+.stop-actions button:disabled { opacity: 0.35; cursor: default; }
+
+@media (max-width: 800px) {
+  .trip-row { grid-template-columns: 1fr; gap: 2px; }
+  .trip-head { flex-direction: column; }
+}
+.stop-form .field select { max-width: 220px; }

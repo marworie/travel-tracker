@@ -8,6 +8,7 @@ const TITLES = {
   foreign: 'Yurt dışında gezilen şehirler',
 }
 
+// Açılınca verileri API'den taze çeker ve liste olarak gösterir
 export default function ListPage({ type, onBack }) {
   const [items, setItems] = useState(null) // null = yükleniyor
 

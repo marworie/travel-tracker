@@ -24,6 +24,7 @@ public class UnescoRepository : IUnescoRepository
 
     private IDbConnection CreateConnection() => new SqlConnection(_connectionString);
 
+    // Bir ülkedeki tüm UNESCO mirasları (JOIN ile çoka-çok tablodan)
     public async Task<IEnumerable<UnescoSite>> GetByCountryAsync(string countryIso)
     {
         const string sql = @"
@@ -37,7 +38,7 @@ public class UnescoRepository : IUnescoRepository
         return await db.QueryAsync<UnescoSite>(sql, new { countryIso });
     }
 
-    // field sadece "IsWanted" veya "IsVisited" olabilir
+    // field: "IsWanted" veya "IsVisited" — sadece bu ikisine izin veriyoruz
     public async Task<UnescoSite?> ToggleAsync(int id, string field)
     {
         if (field != "IsWanted" && field != "IsVisited")
@@ -51,16 +52,19 @@ public class UnescoRepository : IUnescoRepository
         return await db.QuerySingleOrDefaultAsync<UnescoSite>(sql, new { id });
     }
 
-        public async Task<IEnumerable<UnescoCountry>> GetCountriesAsync()
+    // UNESCO mirası olan ülkeler ve kaçar mirasları olduğu
+    public async Task<IEnumerable<UnescoCountry>> GetCountriesAsync()
     {
         const string sql = @"
             SELECT CountryIso, COUNT(*) AS SiteCount
             FROM UnescoSiteCountries
             GROUP BY CountryIso";
+
         using var db = CreateConnection();
         return await db.QueryAsync<UnescoCountry>(sql);
     }
 
+    // ⭐ veya ✓ işaretlenmiş miraslar (ilk ülkesiyle birlikte)
     public async Task<IEnumerable<UnescoSite>> GetSavedAsync()
     {
         const string sql = @"
@@ -69,6 +73,7 @@ public class UnescoRepository : IUnescoRepository
             FROM UnescoSites s
             WHERE s.IsWanted = 1 OR s.IsVisited = 1
             ORDER BY s.Name";
+
         using var db = CreateConnection();
         return await db.QueryAsync<UnescoSite>(sql);
     }
