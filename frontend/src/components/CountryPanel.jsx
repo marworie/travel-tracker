@@ -3,7 +3,6 @@ import { api } from '../api'
 
 export default function CountryPanel({ country, isVisited, cities, onToggle, onAddCity, onRemoveCity }) {
   const [cityName, setCityName] = useState('')
-
   const [suggestions, setSuggestions] = useState([])
 
   // Yazdıkça şehir önerilerini getir (200 ms bekleyerek)
@@ -16,7 +15,7 @@ export default function CountryPanel({ country, isVisited, cities, onToggle, onA
   }, [country?.iso, cityName])
 
   if (!country) {
-    return <div className="panel panel-empty">👆 Haritadan bir ülke seç</div>
+    return <div className="panel panel-empty">Şehir eklemek için haritadan bir ülke seç.</div>
   }
 
   const handleSubmit = async (e) => {
@@ -31,7 +30,7 @@ export default function CountryPanel({ country, isVisited, cities, onToggle, onA
       <div className="panel-head">
         <h3>{country.name}</h3>
         <button className={isVisited ? 'visit-btn on' : 'visit-btn'} onClick={onToggle}>
-          {isVisited ? '✕ Kaldır' : 'Gittim olarak işaretle'}
+          {isVisited ? 'Gidilenlerden kaldır' : 'Gidildi olarak işaretle'}
         </button>
       </div>
 
@@ -39,7 +38,7 @@ export default function CountryPanel({ country, isVisited, cities, onToggle, onA
         <input
           value={cityName}
           onChange={(e) => setCityName(e.target.value)}
-          placeholder="Gittiğin şehri yaz, ör. Paris"
+          placeholder="Şehir ara, ör. Paris"
           maxLength={100}
           list="city-suggestions"
         />

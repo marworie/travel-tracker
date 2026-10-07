@@ -1,7 +1,8 @@
+// Gezilen yurt dışı şehirler, ülkelere göre gruplu
 export default function VisitedCities({ cities, onSelectCountry }) {
   if (cities.length === 0) return null
 
-  // Ülkelere göre grupla
+  // { "France": [...], "Italy": [...] } şeklinde grupla
   const groups = cities.reduce((acc, c) => {
     (acc[c.countryName] ??= []).push(c)
     return acc
@@ -9,7 +10,7 @@ export default function VisitedCities({ cities, onSelectCountry }) {
 
   return (
     <section className="visited-section">
-      <h2>📍 Gezilen şehirler</h2>
+      <h2>Gezilen şehirler</h2>
       <div className="visited-grid">
         {Object.entries(groups).map(([countryName, list]) => (
           <div

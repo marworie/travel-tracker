@@ -27,12 +27,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ isoNumeric, countryName, cityName }),
     }),
-
   deleteForeignCity: (id) =>
     fetch(`${API_URL}/foreign-cities/${id}`, { method: 'DELETE' }),
 
   searchWorldCities: (iso, q = '') =>
     request(`/world-cities?iso=${iso}&q=${encodeURIComponent(q)}`),
+
+  getUnescoSites: (iso) => request(`/unesco?iso=${iso}`),
+  getUnescoCountries: () => request('/unesco/countries'),
+  getSavedUnesco: () => request('/unesco/saved'),
+  toggleUnescoWanted: (id) => request(`/unesco/${id}/wanted`, { method: 'POST' }),
+  toggleUnescoVisited: (id) => request(`/unesco/${id}/visited`, { method: 'POST' }),
 
   getStats: () => request('/stats'),
 }

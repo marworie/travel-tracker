@@ -1,23 +1,19 @@
-function StatCard({ emoji, label, visited, total, percent, color, onClick }) {
+function StatCard({ label, visited, total, percent, onClick }) {
   return (
-    <div className="stat-card clickable" onClick={onClick}>
-      <div className="stat-top">
-        <span className="stat-emoji">{emoji}</span>
-        <span className="stat-label">{label}</span>
-        <span className="stat-arrow">›</span>
-      </div>
-      <div className="stat-number">
-        {visited} {total && <span>/ {total}</span>}
-      </div>
-      {percent !== undefined && (
-        <>
-          <div className="progress">
-            <div className="progress-fill" style={{ width: `${percent}%`, background: color }} />
-          </div>
-          <div className="stat-percent">%{percent}</div>
-        </>
+    <button className="stat-card" onClick={onClick} title="Listeyi göster">
+      <span className="stat-label">{label}</span>
+      <span className="stat-number">
+        {visited}
+        {total && <span className="stat-total"> / {total}</span>}
+      </span>
+      {percent !== undefined ? (
+        <span className="progress" aria-label={`%${percent}`}>
+          <span className="progress-fill" style={{ width: `${percent}%` }} />
+        </span>
+      ) : (
+        <span className="stat-note">yurt dışında</span>
       )}
-    </div>
+    </button>
   )
 }
 
@@ -26,13 +22,11 @@ export default function StatsBar({ stats, onOpenList }) {
 
   return (
     <div className="stats">
-      <StatCard emoji="🏙️" label="Gezilen iller" visited={stats.visitedCities}
-        total={stats.totalCities} percent={stats.cityPercent} color="var(--coral)"
-        onClick={() => onOpenList('cities')} />
-      <StatCard emoji="✈️" label="Gezilen ülkeler" visited={stats.visitedCountries}
-        total={stats.totalCountries} percent={stats.countryPercent} color="var(--teal)"
-        onClick={() => onOpenList('countries')} />
-      <StatCard emoji="📍" label="Yurt dışı şehirler" visited={stats.visitedForeignCities}
+      <StatCard label="İller" visited={stats.visitedCities} total={stats.totalCities}
+        percent={stats.cityPercent} onClick={() => onOpenList('cities')} />
+      <StatCard label="Ülkeler" visited={stats.visitedCountries} total={stats.totalCountries}
+        percent={stats.countryPercent} onClick={() => onOpenList('countries')} />
+      <StatCard label="Şehirler" visited={stats.visitedForeignCities}
         onClick={() => onOpenList('foreign')} />
     </div>
   )

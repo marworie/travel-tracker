@@ -1,24 +1,27 @@
 import { useEffect, useState } from 'react'
 import { api } from './api'
-import StatsBar from './components/StatsBar'
+import Sidebar from './components/Sidebar'
 import WorldMap from './components/WorldMap'
 import TurkeyMap from './components/TurkeyMap'
 import CountryPanel from './components/CountryPanel'
 import VisitedCities from './components/VisitedCities'
-import ListModal from './components/ListModal'
+import HomePage from './pages/HomePage'
+import ExplorePage from './pages/ExplorePage'
+import ListPage from './pages/ListPage'
 
 export default function App() {
-  const [tab, setTab] = useState('turkey')
-  const [visitedCities, setVisitedCities] = useState(new Set())
-  const [visitedCountries, setVisitedCountries] = useState(new Set())
-  const [foreignCities, setForeignCities] = useState([])
-  const [selectedCountry, setSelectedCountry] = useState(null) // { iso, name }
+  const [page, setPage] = useState('home') // 'home' | 'turkey' | 'world' | 'explore'
+  const [visitedCities, setVisitedCities] = useState(new Set())       // plaka kodları
+  const [visitedCountries, setVisitedCountries] = useState(new Set()) // ISO numeric
+  const [foreignCities, setForeignCities] = useState([])              // yurt dışı şehirler
+  const [selectedCountry, setSelectedCountry] = useState(null)        // { iso, name }
   const [stats, setStats] = useState(null)
   const [openList, setOpenList] = useState(null) // 'cities' | 'countries' | 'foreign'
   const [error, setError] = useState('')
 
   const refreshStats = () => api.getStats().then(setStats)
 
+  // İlk açılışta verileri çek
   useEffect(() => {
     Promise.all([api.getCities(), api.getVisitedCountries(), api.getForeignCities(), api.getStats()])
       .then(([cities, countries, foreign, s]) => {
@@ -40,7 +43,7 @@ export default function App() {
     })
     refreshStats()
   }
- 
+
   // ---- Dünya ----
   const selectedIso = selectedCountry?.iso
   const citiesOfSelected = foreignCities.filter((c) => c.isoNumeric === selectedIso)
@@ -90,48 +93,53 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      <header>
-        <h1>🗺️ Gezi Haritam</h1>
-        <p className="subtitle">Gittiğin yerlere tıkla, haritan renklensin</p>
-      </header>
+    <div className="layout">
+      <Sidebar page={page} onChange={(p) => { setPage(p); setOpenList(null) }} />
 
-      {error && <div className="error">{error}</div>}
+      <main className="main">
+        {error && <div className="error">{error}</div>}
 
-      <StatsBar stats={stats} onOpenList={setOpenList} />
+        {openList && <ListPage type={openList} onBack={() => setOpenList(null)} />}
 
-      {openList && <ListModal type={openList} onClose={() => setOpenList(null)} />}
-
-      <div className="tabs">
-        <button className={tab === 'turkey' ? 'active' : ''} onClick={() => setTab('turkey')}>🇹🇷 Türkiye</button>
-        <button className={tab === 'world' ? 'active' : ''} onClick={() => setTab('world')}>🌍 Dünya</button>
-      </div>
-
-      <div className="map-card">
-        {tab === 'turkey' ? (
-          <TurkeyMap visited={visitedCities} onCityClick={handleCityClick} />
-        ) : (
-          <WorldMap
-            visited={visitedCountries}
-            selectedIso={selectedIso}
-            onCountryClick={handleCountryClick}
-          />
+        {!openList && page === 'home' && (
+          <HomePage stats={stats} onOpenList={setOpenList} onGoExplore={() => setPage('explore')} />
         )}
-      </div>
 
-      {tab === 'world' && (
-        <>
-          <CountryPanel
-            country={selectedCountry}
-            isVisited={visitedCountries.has(selectedIso)}
-            cities={citiesOfSelected}
-            onToggle={handleToggleCountry}
-            onAddCity={handleAddCity}
-            onRemoveCity={handleRemoveCity}
-          />
-          <VisitedCities cities={foreignCities} onSelectCountry={setSelectedCountry} />
-        </>
-      )}
+        {!openList && page === 'turkey' && (
+          <>
+            <div className="page-head">
+              <h1>Türkiye</h1>
+              <p className="subtitle">Gittiğin ile tıkla, tekrar tıklarsan kaldırılır.</p>
+            </div>
+            <div className="map-card">
+              <TurkeyMap visited={visitedCities} onCityClick={handleCityClick} />
+            </div>
+          </>
+        )}
+
+        {!openList && page === 'world' && (
+          <>
+            <div className="page-head">
+              <h1>Dünya</h1>
+              <p className="subtitle">Gittiğin ülkeye tıkla, altta şehir ekleyebilirsin.</p>
+            </div>
+            <div className="map-card">
+              <WorldMap visited={visitedCountries} selectedIso={selectedIso} onCountryClick={handleCountryClick} />
+            </div>
+            <CountryPanel
+              country={selectedCountry}
+              isVisited={visitedCountries.has(selectedIso)}
+              cities={citiesOfSelected}
+              onToggle={handleToggleCountry}
+              onAddCity={handleAddCity}
+              onRemoveCity={handleRemoveCity}
+            />
+            <VisitedCities cities={foreignCities} onSelectCountry={setSelectedCountry} />
+          </>
+        )}
+
+        {!openList && page === 'explore' && <ExplorePage />}
+      </main>
     </div>
   )
 }

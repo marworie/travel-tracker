@@ -9,7 +9,7 @@ export default function TurkeyMap({ visited, onCityClick }) {
 
   return (
     <div className="map-wrap">
-      <div className="hover-label">{hovered || 'Bir ilin üzerine gel'}</div>
+      <div className="hover-label">{hovered || 'İl adını görmek için üzerine gel'}</div>
 
       <ComposableMap
         projection="geoMercator"
@@ -28,7 +28,7 @@ export default function TurkeyMap({ visited, onCityClick }) {
                   key={geo.rsmKey}
                   geography={geo}
                   onClick={() => onCityClick(plateCode)}
-                  onMouseEnter={() => setHovered(`${plateCode} · ${geo.properties.name}`)}
+                  onMouseEnter={() => setHovered(`${geo.properties.name} (${plateCode})`)}
                   onMouseLeave={() => setHovered('')}
                   className={isVisited ? 'region visited-city' : 'region'}
                 />
