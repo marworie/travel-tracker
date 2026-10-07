@@ -13,6 +13,7 @@ builder.Services.AddScoped<IForeignCityRepository, ForeignCityRepository>();
 builder.Services.AddScoped<IWorldCityRepository, WorldCityRepository>();
 builder.Services.AddScoped<IUnescoRepository, UnescoRepository>();
 builder.Services.AddScoped<ITripRepository, TripRepository>();
+builder.Services.AddScoped<ILandmarkRepository, LandmarkRepository>();
 
 // React (Vite) uygulamasının API'ye erişebilmesi için
 builder.Services.AddCors(options =>

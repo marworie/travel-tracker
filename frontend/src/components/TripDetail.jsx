@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { allCountries, countryName, formatDate } from '../countryNames'
+import TripRouteMap from './TripRouteMap'
 
 const EMPTY_STOP = { countryIso: '792', place: '', stopDate: '', note: '' }
 
@@ -63,6 +64,8 @@ export default function TripDetail({ id, onBack }) {
         </div>
         <button className="text-danger-btn" onClick={handleDeleteTrip}>Geziyi sil</button>
       </div>
+
+      <TripRouteMap stops={trip.stops} />
 
       {trip.stops.length === 0 ? (
         <div className="empty-card">Bu gezide henüz durak yok. Aşağıdan ilk durağı ekle.</div>

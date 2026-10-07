@@ -19,6 +19,8 @@ public class TripStop
     public string Place { get; set; } = string.Empty;
     public DateTime? StopDate { get; set; }
     public string? Note { get; set; }
+    public decimal? Latitude { get; set; }   // şehir tablosunda bulunamazsa boş kalır
+    public decimal? Longitude { get; set; }
 }
 
 // Gezi + durakları (detay sayfası için)

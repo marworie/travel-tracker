@@ -6,8 +6,19 @@ import StatsBar from '../components/StatsBar'
 export default function HomePage({ stats, onOpenList, onGoExplore }) {
   const [saved, setSaved] = useState([])
 
+  // UNESCO yerleri ve "mutlaka görülmeli" yerler tek listede birleşiyor
   useEffect(() => {
-    api.getSavedUnesco().then(setSaved).catch(() => setSaved([]))
+    Promise.all([api.getSavedUnesco(), api.getSavedLandmarks().catch(() => [])])
+      .then(([unesco, landmarks]) =>
+        setSaved([
+          ...landmarks.map((l) => ({
+            key: `l${l.id}`, name: l.name, countryIso: l.countryIso, isWanted: l.isWanted, isVisited: l.isVisited,
+            url: `https://en.wikipedia.org/wiki/${encodeURIComponent(l.wikiTitle)}`,
+          })),
+          ...unesco.map((u) => ({ ...u, key: `u${u.id}` })),
+        ])
+      )
+      .catch(() => setSaved([]))
   }, [])
 
   const wanted = saved.filter((s) => s.isWanted && !s.isVisited)
@@ -31,7 +42,7 @@ export default function HomePage({ stats, onOpenList, onGoExplore }) {
         ) : (
           <div className="wish-list">
             {wanted.map((s) => (
-              <a key={s.id} className="wish-item" href={s.url} target="_blank" rel="noreferrer">
+              <a key={s.key} className="wish-item" href={s.url} target="_blank" rel="noreferrer">
                 <span className="wish-name">{s.name}</span>
                 <span className="wish-country">{countryName(s.countryIso)}</span>
               </a>
@@ -42,10 +53,10 @@ export default function HomePage({ stats, onOpenList, onGoExplore }) {
 
       {seen.length > 0 && (
         <section className="home-section">
-          <h2>Gördüğüm UNESCO mirasları <span className="count-pill">{seen.length}</span></h2>
+          <h2>Gördüğüm yerler <span className="count-pill">{seen.length}</span></h2>
           <div className="chips">
             {seen.map((s) => (
-              <span key={s.id} className="chip">{s.name}</span>
+              <span key={s.key} className="chip">{s.name}</span>
             ))}
           </div>
         </section>

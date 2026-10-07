@@ -7,7 +7,7 @@ namespace TravelTracker.Api.Repositories;
 
 public interface ITripRepository
 {
-    Task<IEnumerable<Trip>> GetAllAsync();
+    Task<IEnumerable<TripDetail>> GetAllAsync();
     Task<TripDetail?> GetByIdAsync(int id);
     Task<Trip> CreateAsync(SaveTripRequest req);
     Task<bool> DeleteAsync(int id);
@@ -27,17 +27,28 @@ public class TripRepository : ITripRepository
 
     private IDbConnection CreateConnection() => new SqlConnection(_connectionString);
 
-    // Tarihi olan geziler önce (yakın tarih üstte), tarihsizler en sonda
-    public async Task<IEnumerable<Trip>> GetAllAsync()
+    // Tüm geziler + durakları. İki sorguyu tek seferde çalıştırıp
+    // durakları C# tarafında gezilere dağıtıyoruz (her gezi için ayrı sorgu atmamak için).
+    public async Task<IEnumerable<TripDetail>> GetAllAsync()
     {
         const string sql = @"
-            SELECT t.*,
-                   (SELECT COUNT(*) FROM TripStops s WHERE s.TripId = t.Id) AS StopCount
-            FROM Trips t
-            ORDER BY CASE WHEN t.StartDate IS NULL THEN 1 ELSE 0 END, t.StartDate, t.Id";
+            SELECT * FROM Trips
+            ORDER BY CASE WHEN StartDate IS NULL THEN 1 ELSE 0 END, StartDate, Id;
+
+            SELECT * FROM TripStops ORDER BY TripId, StopOrder;";
 
         using var db = CreateConnection();
-        return await db.QueryAsync<Trip>(sql);
+        using var multi = await db.QueryMultipleAsync(sql);
+
+        var trips = (await multi.ReadAsync<TripDetail>()).ToList();
+        var stopsByTrip = (await multi.ReadAsync<TripStop>()).ToLookup(s => s.TripId);
+
+        foreach (var trip in trips)
+        {
+            trip.Stops = stopsByTrip[trip.Id].ToList();
+            trip.StopCount = trip.Stops.Count;
+        }
+        return trips;
     }
 
     // QueryMultiple: tek seferde iki sorgu çalıştırıp iki sonuç seti okuyoruz
@@ -76,17 +87,26 @@ public class TripRepository : ITripRepository
         return await db.ExecuteAsync("DELETE FROM Trips WHERE Id = @id", new { id }) > 0;
     }
 
-    // Yeni durak listenin sonuna eklenir
+    // Yeni durak listenin sonuna eklenir.
+    // Koordinatı, aynı ülkedeki aynı isimli en kalabalık şehirden alıyoruz (bulunamazsa NULL).
     public async Task<TripStop> AddStopAsync(int tripId, AddStopRequest req)
     {
         const string sql = @"
-            INSERT INTO TripStops (TripId, StopOrder, CountryIso, Place, StopDate, Note)
+            INSERT INTO TripStops (TripId, StopOrder, CountryIso, Place, StopDate, Note, Latitude, Longitude)
             OUTPUT INSERTED.*
-            VALUES (
+            SELECT
                 @tripId,
                 (SELECT ISNULL(MAX(StopOrder), 0) + 1 FROM TripStops WHERE TripId = @tripId),
-                @CountryIso, @Place, @StopDate, @Note
-            );";
+                @CountryIso, @Place, @StopDate, @Note,
+                wc.Latitude, wc.Longitude
+            FROM (SELECT 1 AS Dummy) AS d
+            OUTER APPLY (
+                SELECT TOP 1 Latitude, Longitude
+                FROM WorldCities
+                WHERE CountryIso = @CountryIso
+                  AND Name COLLATE Latin1_General_CI_AI = @Place COLLATE Latin1_General_CI_AI
+                ORDER BY Population DESC
+            ) AS wc;";
 
         using var db = CreateConnection();
         return await db.QuerySingleAsync<TripStop>(sql, new

@@ -49,5 +49,10 @@ export const api = {
   moveStop: (stopId, direction) =>
     fetch(`${API_URL}/trips/stops/${stopId}/move?direction=${direction}`, { method: 'POST' }),
 
+  getLandmarks: () => request('/landmarks'),
+  getSavedLandmarks: () => request('/landmarks/saved'),
+  toggleLandmarkWanted: (id) => request(`/landmarks/${id}/wanted`, { method: 'POST' }),
+  toggleLandmarkVisited: (id) => request(`/landmarks/${id}/visited`, { method: 'POST' }),
+
   getStats: () => request('/stats'),
 }

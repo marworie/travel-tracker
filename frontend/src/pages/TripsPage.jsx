@@ -1,9 +1,44 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
-import { formatDate } from '../countryNames'
+import { formatDate, tripStatus } from '../countryNames'
 import TripDetail from '../components/TripDetail'
+import TripRouteMap from '../components/TripRouteMap'
 
 const EMPTY = { title: '', startDate: '', endDate: '' }
+
+function TripCard({ trip, onOpen }) {
+  const status = tripStatus(trip.startDate, trip.endDate)
+  const hasLocation = trip.stops.some((s) => s.latitude != null)
+
+  return (
+    <button className={`trip-card ${status.past ? 'past' : ''}`} onClick={onOpen}>
+      {hasLocation ? (
+        <TripRouteMap stops={trip.stops} compact />
+      ) : (
+        <div className="route-mini route-empty">
+          {trip.stops.length === 0 ? 'Henüz durak yok' : 'Durakların konumu bulunamadı'}
+        </div>
+      )}
+
+      <div className="trip-card-body">
+        <div className="trip-card-top">
+          <span className="trip-title">{trip.title}</span>
+          {trip.startDate && (
+            <span className={`trip-status ${status.past ? '' : 'upcoming'}`}>{status.label}</span>
+          )}
+        </div>
+        <div className="trip-dates">
+          {trip.startDate
+            ? `${formatDate(trip.startDate)}${trip.endDate ? ` – ${formatDate(trip.endDate)}` : ''}`
+            : 'Tarih belirlenmedi'}
+        </div>
+        {trip.stops.length > 0 && (
+          <div className="trip-chain">{trip.stops.map((s) => s.place).join(' → ')}</div>
+        )}
+      </div>
+    </button>
+  )
+}
 
 export default function TripsPage() {
   const [trips, setTrips] = useState([])
@@ -22,19 +57,27 @@ export default function TripsPage() {
       setError('Bitiş tarihi başlangıçtan önce olamaz.')
       return
     }
-    const trip = await api.createTrip({
-      title: form.title,
-      startDate: form.startDate || null,
-      endDate: form.endDate || null,
-    })
+    let trip
+    try {
+      trip = await api.createTrip({
+        title: form.title,
+        startDate: form.startDate || null,
+        endDate: form.endDate || null,
+      })
+    } catch {
+      setError('Gezi kaydedilemedi. Backend çalışıyor mu?')
+      return
+    }
     setForm(EMPTY)
-    loadTrips()
     setOpenId(trip.id)
   }
 
   if (openId) {
     return <TripDetail id={openId} onBack={() => { setOpenId(null); loadTrips() }} />
   }
+
+  const upcoming = trips.filter((t) => !tripStatus(t.startDate, t.endDate).past)
+  const past = trips.filter((t) => tripStatus(t.startDate, t.endDate).past)
 
   return (
     <>
@@ -43,7 +86,7 @@ export default function TripsPage() {
         <p className="subtitle">Bir gezi oluştur, sonra duraklarını sırayla ekle.</p>
       </div>
 
-      <form className="trip-form" onSubmit={handleCreate}>
+      <form className="trip-form panel" onSubmit={handleCreate}>
         <label className="field grow">
           <span>Gezi adı</span>
           <input
@@ -66,24 +109,27 @@ export default function TripsPage() {
       </form>
       {error && <p className="form-error">{error}</p>}
 
-      <section className="home-section">
-        <h2>Gezilerim <span className="count-pill">{trips.length}</span></h2>
-        {trips.length === 0 ? (
-          <div className="empty-card">Henüz bir gezi planlamadın. Yukarıdaki formdan ilkini oluştur.</div>
-        ) : (
-          <div className="trip-list">
-            {trips.map((t) => (
-              <button key={t.id} className="trip-row" onClick={() => setOpenId(t.id)}>
-                <span className="trip-title">{t.title}</span>
-                <span className="trip-dates">
-                  {t.startDate ? `${formatDate(t.startDate)}${t.endDate ? ` – ${formatDate(t.endDate)}` : ''}` : 'Tarih yok'}
-                </span>
-                <span className="trip-stops">{t.stopCount} durak</span>
-              </button>
-            ))}
+      {trips.length === 0 && (
+        <div className="empty-card trips-empty">Henüz bir gezi planlamadın. Yukarıdaki formdan ilkini oluştur.</div>
+      )}
+
+      {upcoming.length > 0 && (
+        <section className="home-section">
+          <h2>Yaklaşan <span className="count-pill">{upcoming.length}</span></h2>
+          <div className="trip-grid">
+            {upcoming.map((t) => <TripCard key={t.id} trip={t} onOpen={() => setOpenId(t.id)} />)}
           </div>
-        )}
-      </section>
+        </section>
+      )}
+
+      {past.length > 0 && (
+        <section className="home-section">
+          <h2>Geçmiş <span className="count-pill">{past.length}</span></h2>
+          <div className="trip-grid">
+            {past.map((t) => <TripCard key={t.id} trip={t} onOpen={() => setOpenId(t.id)} />)}
+          </div>
+        </section>
+      )}
     </>
   )
 }
