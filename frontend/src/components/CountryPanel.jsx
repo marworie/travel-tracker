@@ -1,7 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from '../api'
 
 export default function CountryPanel({ country, isVisited, cities, onToggle, onAddCity, onRemoveCity }) {
   const [cityName, setCityName] = useState('')
+
+  const [suggestions, setSuggestions] = useState([])
+
+  // Yazdıkça şehir önerilerini getir (200 ms bekleyerek)
+  useEffect(() => {
+    if (!country) return
+    const timer = setTimeout(() => {
+      api.searchWorldCities(country.iso, cityName).then(setSuggestions).catch(() => setSuggestions([]))
+    }, 200)
+    return () => clearTimeout(timer)
+  }, [country?.iso, cityName])
 
   if (!country) {
     return <div className="panel panel-empty">👆 Haritadan bir ülke seç</div>
@@ -29,7 +41,13 @@ export default function CountryPanel({ country, isVisited, cities, onToggle, onA
           onChange={(e) => setCityName(e.target.value)}
           placeholder="Gittiğin şehri yaz, ör. Paris"
           maxLength={100}
+          list="city-suggestions"
         />
+        <datalist id="city-suggestions">
+          {suggestions.map((name) => (
+            <option key={name} value={name} />
+          ))}
+        </datalist>
         <button type="submit">Ekle</button>
       </form>
 

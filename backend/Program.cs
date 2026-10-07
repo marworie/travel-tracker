@@ -10,6 +10,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ICityRepository, CityRepository>();
 builder.Services.AddScoped<ICountryRepository, CountryRepository>();
 builder.Services.AddScoped<IForeignCityRepository, ForeignCityRepository>();
+builder.Services.AddScoped<IWorldCityRepository, WorldCityRepository>();
 
 // React (Vite) uygulamasının API'ye erişebilmesi için
 builder.Services.AddCors(options =>

@@ -22,13 +22,17 @@ export const api = {
     }),
 
   getForeignCities: () => request('/foreign-cities'),
-  addForeignCity: (isoNumeric, countryName, cityName) => 
+  addForeignCity: (isoNumeric, countryName, cityName) =>
     request('/foreign-cities', {
       method: 'POST',
-      body: JSON.stringify({isoNumeric, countryName, cityName}),
+      body: JSON.stringify({ isoNumeric, countryName, cityName }),
     }),
-    deleteForeignCity: (id) =>
-      fetch(`${API_URL}/foreign-cities/${id}` ,  { method: 'DELETE'}),
-  
+
+  deleteForeignCity: (id) =>
+    fetch(`${API_URL}/foreign-cities/${id}`, { method: 'DELETE' }),
+
+  searchWorldCities: (iso, q = '') =>
+    request(`/world-cities?iso=${iso}&q=${encodeURIComponent(q)}`),
+
   getStats: () => request('/stats'),
 }
