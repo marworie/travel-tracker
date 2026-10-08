@@ -19,7 +19,6 @@ CREATE TABLE Landmarks (
     IsVisited   BIT            NOT NULL DEFAULT 0
 );
 GO
-
 INSERT INTO Landmarks (Collection, Name, WikiTitle, CountryIso, City, Latitude, Longitude, SortOrder) VALUES
 ('new7',N'Çin Seddi',N'Great Wall of China','156',N'Pekin',40.43,116.57,1),
 ('new7',N'Petra',N'Petra','400',N'Maan',30.33,35.44,2),

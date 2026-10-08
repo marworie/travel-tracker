@@ -154,6 +154,9 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   margin-top: 10px;
 }
 .progress-fill { display: block; height: 100%; background: var(--visited); }
+.stat-progress { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.stat-progress .progress { flex: 1; margin: 0; }
+.stat-percent { font-size: 0.85rem; font-weight: 600; color: var(--visited); font-variant-numeric: tabular-nums; }
 
 /* ===== Harita ===== */
 .map-card {
@@ -695,3 +698,147 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 @media (prefers-reduced-motion: reduce) {
   .landmark-photo img { transition: none; }
 }
+.panel-hint { color: var(--muted); font-size: 0.85rem; }
+
+/* ===== Özet panosu ===== */
+.home-grid {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+.home-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  min-width: 0;
+}
+.home-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.home-card-head h2 { margin: 0; display: flex; align-items: baseline; gap: 8px; }
+.home-card .link-btn { font-size: 0.88rem; }
+.home-card .wish-list { border-top: none; }
+.home-card .wish-item:last-child { border-bottom: none; }
+
+.mini-map-btn { display: block; width: 100%; border: none; background: none; padding: 0; cursor: pointer; }
+.mini-land { fill: var(--land); stroke: var(--surface); stroke-width: 0.4; outline: none; pointer-events: none; }
+.mini-land.visited { fill: var(--visited); }
+
+.next-trip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-left: 3px solid var(--visited);
+  background: transparent;
+  color: var(--ink);
+  padding: 2px 0 2px 14px;
+  cursor: pointer;
+}
+.next-countdown {
+  font-family: var(--condensed);
+  font-weight: 600;
+  font-size: 2.2rem;
+  line-height: 1.05;
+  color: var(--visited);
+}
+.next-title { font-family: var(--condensed); font-weight: 600; font-size: 1.25rem; margin-top: 4px; }
+.next-trip:hover .next-title { text-decoration: underline; }
+.empty-inline { color: var(--muted); font-size: 0.92rem; }
+
+.region-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.region-list li {
+  display: grid;
+  grid-template-columns: 11.5em 1fr 3em;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.92rem;
+}
+.region-bar { height: 6px; background: var(--land); border-radius: 3px; overflow: hidden; }
+.region-bar span { display: block; height: 100%; background: var(--visited); }
+.region-count { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 900px) {
+  .home-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== Sidebar kullanıcı alanı ===== */
+.sidebar { display: flex; flex-direction: column; }
+.sidebar-user {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  padding: 14px 10px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.user-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.logout-btn {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.logout-btn:hover { color: var(--danger); }
+
+/* ===== Giriş ekranı ===== */
+.login-layout { display: grid; grid-template-columns: 1.1fr 1fr; min-height: 100vh; }
+.login-art {
+  background: var(--visited);
+  color: #eef3ef;
+  padding: 36px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+.login-brand { font-family: var(--condensed); font-weight: 600; font-size: 1.3rem; }
+.login-map { margin: 24px -40px; }
+.login-art .mini-land { fill: rgba(255, 255, 255, 0.13); stroke: var(--visited); stroke-width: 0.6; }
+.login-tagline {
+  font-family: var(--condensed);
+  font-weight: 600;
+  font-size: clamp(1.8rem, 3.2vw, 2.6rem);
+  line-height: 1.1;
+  margin: 0;
+  max-width: 14ch;
+}
+.login-main { display: flex; align-items: center; justify-content: center; padding: 32px 20px; }
+.login-card { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 14px; }
+.login-card h1 { font-family: var(--condensed); font-weight: 600; font-size: 2rem; margin: 0; }
+.login-tabs { align-self: flex-start; margin-bottom: 4px; }
+.login-card .field input { padding: 11px 12px; }
+.login-submit { align-self: stretch; padding: 12px; margin-top: 4px; }
+.login-submit:disabled { opacity: 0.6; cursor: default; }
+.login-hint { color: var(--muted); font-size: 0.85rem; margin: 0; }
+.login-card .form-error { margin: 0; }
+
+@media (max-width: 800px) {
+  .login-layout { grid-template-columns: 1fr; }
+  .login-art { padding: 20px; }
+  .login-map { display: none; }
+  .login-tagline { font-size: 1.6rem; margin-top: 12px; }
+  .sidebar-user { margin-top: 8px; padding-top: 10px; }
+}
+.splash {
+  position: fixed; inset: 0; z-index: 1000;
+  background: var(--visited); color: #fff;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+}
+.splash-lottie { width: min(360px, 70vw); }
+.splash-text {
+  margin: 0; font-family: var(--condensed); font-size: 1.6rem;
+  animation: splash-rise 0.5s ease-out 0.4s both;
+}
+@keyframes splash-rise { from { opacity: 0; transform: translateY(8px); } }

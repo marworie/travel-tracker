@@ -10,7 +10,13 @@ export default function WorldMap({ visited, selectedIso, onCountryClick }) {
       <div className="hover-label">{hovered || 'Yakınlaştırmak için fare tekerleğini kullan'}</div>
 
       <ComposableMap projectionConfig={{ scale: 150 }} width={800} height={420}>
-        <ZoomableGroup center={[20, 20]} minZoom={1} maxZoom={6}>
+        <ZoomableGroup
+          center={[20, 20]}
+          minZoom={1}
+          maxZoom={6}
+          // Çift tıklamada yakınlaşmasın: aynı ülkeye tekrar tıklamak "kaldır" demek
+          filterZoomEvent={(e) => e.type !== 'dblclick'}
+        >
           <Geographies geography={worldData}>
             {({ geographies }) =>
               geographies

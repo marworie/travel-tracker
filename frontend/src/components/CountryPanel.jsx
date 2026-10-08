@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 
-export default function CountryPanel({ country, isVisited, cities, onToggle, onAddCity, onRemoveCity }) {
+export default function CountryPanel({ country, cities, onAddCity, onRemoveCity }) {
   const [cityName, setCityName] = useState('')
   const [suggestions, setSuggestions] = useState([])
 
@@ -29,9 +29,7 @@ export default function CountryPanel({ country, isVisited, cities, onToggle, onA
     <div className="panel">
       <div className="panel-head">
         <h3>{country.name}</h3>
-        <button className={isVisited ? 'visit-btn on' : 'visit-btn'} onClick={onToggle}>
-          {isVisited ? 'Gidilenlerden kaldır' : 'Gidildi olarak işaretle'}
-        </button>
+        <span className="panel-hint">Kaldırmak için haritada ülkeye tekrar tıkla</span>
       </div>
 
       <form className="city-form" onSubmit={handleSubmit}>

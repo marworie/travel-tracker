@@ -7,9 +7,12 @@ function StatCard({ label, visited, total, percent, onClick }) {
         {total && <span className="stat-total"> / {total}</span>}
       </span>
       {percent !== undefined ? (
+      <span className="stat-progress">
         <span className="progress" aria-label={`%${percent}`}>
           <span className="progress-fill" style={{ width: `${percent}%` }} />
         </span>
+        <span className="stat-percent">%{percent}</span>
+      </span>
       ) : (
         <span className="stat-note">yurt dışında</span>
       )}

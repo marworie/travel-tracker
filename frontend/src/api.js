@@ -1,16 +1,41 @@
+import { auth } from './auth'
+
 // Backend adresi — dotnet run çıktısındaki porta göre değiştir
 const API_URL = 'http://localhost:5000/api'
 
-async function request(path, options = {}) {
+// Tüm istekler buradan geçer: token varsa "Authorization" başlığına eklenir.
+// Backend 401 dönerse oturum düşmüş demektir → uygulamaya haber veriyoruz.
+async function send(path, options = {}) {
+  const token = auth.get()?.token
   const res = await fetch(`${API_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
   })
-  if (!res.ok) throw new Error(`API hatası: ${res.status}`)
-  return res.json()
+
+  if (res.status === 401 && !path.startsWith('/auth')) {
+    auth.clear()
+    window.dispatchEvent(new Event('auth:logout'))
+  }
+  if (!res.ok) {
+    // Backend'in gönderdiği hata mesajını (ör. "Bu kullanıcı adı alınmış.") aynen ilet
+    const message = await res.text()
+    throw new Error(message || `API hatası: ${res.status}`)
+  }
+  return res
 }
 
+// JSON cevap bekleyen istekler
+const request = (path, options) => send(path, options).then((res) => res.json())
+
 export const api = {
+  login: (username, password) =>
+    request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+  register: (username, password) =>
+    request('/auth/register', { method: 'POST', body: JSON.stringify({ username, password }) }),
+
   getCities: () => request('/cities'),
   toggleCity: (plateCode) => request(`/cities/${plateCode}/toggle`, { method: 'POST' }),
 
@@ -27,8 +52,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ isoNumeric, countryName, cityName }),
     }),
-  deleteForeignCity: (id) =>
-    fetch(`${API_URL}/foreign-cities/${id}`, { method: 'DELETE' }),
+  deleteForeignCity: (id) => send(`/foreign-cities/${id}`, { method: 'DELETE' }),
 
   searchWorldCities: (iso, q = '') =>
     request(`/world-cities?iso=${iso}&q=${encodeURIComponent(q)}`),
@@ -42,12 +66,12 @@ export const api = {
   getTrips: () => request('/trips'),
   getTrip: (id) => request(`/trips/${id}`),
   createTrip: (trip) => request('/trips', { method: 'POST', body: JSON.stringify(trip) }),
-  deleteTrip: (id) => fetch(`${API_URL}/trips/${id}`, { method: 'DELETE' }),
+  deleteTrip: (id) => send(`/trips/${id}`, { method: 'DELETE' }),
   addStop: (tripId, stop) =>
     request(`/trips/${tripId}/stops`, { method: 'POST', body: JSON.stringify(stop) }),
-  deleteStop: (stopId) => fetch(`${API_URL}/trips/stops/${stopId}`, { method: 'DELETE' }),
+  deleteStop: (stopId) => send(`/trips/stops/${stopId}`, { method: 'DELETE' }),
   moveStop: (stopId, direction) =>
-    fetch(`${API_URL}/trips/stops/${stopId}/move?direction=${direction}`, { method: 'POST' }),
+    send(`/trips/stops/${stopId}/move?direction=${direction}`, { method: 'POST' }),
 
   getLandmarks: () => request('/landmarks'),
   getSavedLandmarks: () => request('/landmarks/saved'),

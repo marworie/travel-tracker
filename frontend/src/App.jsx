@@ -9,8 +9,12 @@ import ListPage from './pages/ListPage'
 import TripsPage from './pages/TripsPage'
 import HomePage from './pages/HomePage'
 import ExplorePage from './pages/ExplorePage'
+import LoginPage from './pages/LoginPage'
+import WelcomeSplash from './components/WelcomeSplash'
+import { auth } from './auth'
 
 export default function App() {
+  const [user, setUser] = useState(auth.get()) // { token, username } veya null
   const [page, setPage] = useState('home') // 'home' | 'turkey' | 'world' | 'explore'
   const [visitedCities, setVisitedCities] = useState(new Set())       // plaka kodları
   const [visitedCountries, setVisitedCountries] = useState(new Set()) // ISO numeric
@@ -19,11 +23,21 @@ export default function App() {
   const [stats, setStats] = useState(null)
   const [openList, setOpenList] = useState(null) // 'cities' | 'countries' | 'foreign'
   const [error, setError] = useState('')
+  const [showSplash, setShowSplash] = useState(false) // giriş sonrası animasyon
 
   const refreshStats = () => api.getStats().then(setStats)
 
-  // İlk açılışta verileri çek
+  // Token süresi dolarsa veya geçersizse api.js "auth:logout" olayı gönderir
   useEffect(() => {
+    const onLogout = () => setUser(null)
+    window.addEventListener('auth:logout', onLogout)
+    return () => window.removeEventListener('auth:logout', onLogout)
+  }, [])
+
+  // Giriş yapılınca verileri çek
+  useEffect(() => {
+    if (!user) return
+    setError('')
     Promise.all([api.getCities(), api.getVisitedCountries(), api.getForeignCities(), api.getStats()])
       .then(([cities, countries, foreign, s]) => {
         setVisitedCities(new Set(cities.filter((c) => c.isVisited).map((c) => c.plateCode)))
@@ -31,8 +45,22 @@ export default function App() {
         setForeignCities(foreign)
         setStats(s)
       })
-      .catch(() => setError('Backend\'e bağlanılamadı. API çalışıyor mu?'))
-  }, [])
+      .catch(() => setError('Veriler yüklenemedi. Backend çalışıyor mu?'))
+  }, [user])
+
+  const handleLogin = (result) => {
+    auth.save(result)
+    setUser(result)
+    setPage('home')
+    setShowSplash(true)
+  }
+
+  const handleLogout = () => {
+    auth.clear()
+    setUser(null)
+    setOpenList(null)
+    setSelectedCountry(null)
+  }
 
   // ---- Türkiye ----
   const handleCityClick = async (plateCode) => {
@@ -49,8 +77,16 @@ export default function App() {
   const selectedIso = selectedCountry?.iso
   const citiesOfSelected = foreignCities.filter((c) => c.isoNumeric === selectedIso)
 
-  // Haritada ülkeye tıklanınca: seç + gidilmediyse direkt ekle
+  // Haritada ülkeye tıklanınca:
+  // - gidilmemişse → eklenir ve seçilir
+  // - gidilmiş ve zaten seçiliyse → kaldırılır
+  // - gidilmiş ama seçili değilse → sadece seçilir (şehir eklemek için)
   const handleCountryClick = async (iso, name) => {
+    if (visitedCountries.has(iso) && selectedIso === iso) {
+      await removeCountry(iso, name)
+      return
+    }
+
     setSelectedCountry({ iso, name })
     if (visitedCountries.has(iso)) return
 
@@ -59,23 +95,18 @@ export default function App() {
     refreshStats()
   }
 
-  const handleToggleCountry = async () => {
-    const { iso, name } = selectedCountry
+  const removeCountry = async (iso, name) => {
+    const cityCount = foreignCities.filter((c) => c.isoNumeric === iso).length
+    if (cityCount > 0 && !confirm(`${name} kaldırılırsa ${cityCount} şehir de silinecek. Emin misin?`)) return
 
-    if (visitedCountries.has(iso) && citiesOfSelected.length > 0) {
-      const ok = confirm(`${name} kaldırılırsa ${citiesOfSelected.length} şehir de silinecek. Emin misin?`)
-      if (!ok) return
-    }
-
-    const country = await api.toggleCountry(iso, name)
+    await api.toggleCountry(iso, name)
     setVisitedCountries((prev) => {
       const next = new Set(prev)
-      country.isVisited ? next.add(iso) : next.delete(iso)
+      next.delete(iso)
       return next
     })
-    if (!country.isVisited) {
-      setForeignCities((prev) => prev.filter((c) => c.isoNumeric !== iso))
-    }
+    setForeignCities((prev) => prev.filter((c) => c.isoNumeric !== iso))
+    setSelectedCountry(null)
     refreshStats()
   }
 
@@ -93,9 +124,16 @@ export default function App() {
     refreshStats()
   }
 
+  if (!user) return <LoginPage onLogin={handleLogin} />
+
   return (
     <div className="layout">
-      <Sidebar page={page} onChange={(p) => { setPage(p); setOpenList(null) }} />
+        {showSplash && <WelcomeSplash username={user.username} onDone={() => setShowSplash(false)} />}      <Sidebar
+        page={page}
+        onChange={(p) => { setPage(p); setOpenList(null) }}
+        username={user.username}
+        onLogout={handleLogout}
+      />
 
       <main className="main">
         {error && <div className="error">{error}</div>}
@@ -103,7 +141,13 @@ export default function App() {
         {openList && <ListPage type={openList} onBack={() => setOpenList(null)} />}
 
         {!openList && page === 'home' && (
-          <HomePage stats={stats} onOpenList={setOpenList} onGoExplore={() => setPage('explore')} />
+          <HomePage
+            stats={stats}
+            visitedCities={visitedCities}
+            visitedCountries={visitedCountries}
+            onOpenList={setOpenList}
+            onNavigate={setPage}
+          />
         )}
 
         {!openList && page === 'turkey' && (
@@ -129,9 +173,7 @@ export default function App() {
             </div>
             <CountryPanel
               country={selectedCountry}
-              isVisited={visitedCountries.has(selectedIso)}
               cities={citiesOfSelected}
-              onToggle={handleToggleCountry}
               onAddCity={handleAddCity}
               onRemoveCity={handleRemoveCity}
             />

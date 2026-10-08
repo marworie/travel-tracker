@@ -36,7 +36,7 @@ const PAGES = [
   { id: 'trips', label: 'Gezi planları' },
 ]
 
-export default function Sidebar({ page, onChange }) {
+export default function Sidebar({ page, onChange, username, onLogout }) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -59,6 +59,11 @@ export default function Sidebar({ page, onChange }) {
           </button>
         ))}
       </nav>
+
+      <div className="sidebar-user">
+        <span className="user-name">{username}</span>
+        <button className="logout-btn" onClick={onLogout}>Çıkış yap</button>
+      </div>
     </aside>
   )
 }
