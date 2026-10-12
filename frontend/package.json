@@ -9,12 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "d3-geo": "^2.0.2",
     "i18n-iso-countries": "^7.14.0",
     "lottie-react": "^2.4.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-simple-maps": "^3.0.0",
-    "world-atlas": "^2.0.2"
+    "world-atlas": "^2.0.2",
+    "world-countries": "^5.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",

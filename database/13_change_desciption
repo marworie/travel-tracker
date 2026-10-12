@@ -1,0 +1,4 @@
+USE TravelTrackerDb;
+GO
+ALTER TABLE TripExpenses ALTER COLUMN Description NVARCHAR(200) NULL;
+GO

@@ -72,3 +72,26 @@ export async function fetchWikiInfo(titles) {
 
   return Object.fromEntries(titles.map((t) => [t, cache.get(t) ?? null]))
 }
+
+// Detay sayfası için kısa açıklama: giriş paragrafını alıp ilk 3 cümleyi kendimiz kesiyoruz.
+// (Wikipedia'nın exsentences ayarı "MÖ 4. yüzyıl" gibi yerlerde cümleyi yarıda kesiyor.)
+export async function fetchWikiSummary(trTitle) {
+  const data = await api('tr', {
+    prop: 'extracts',
+    exintro: '1',
+    explaintext: '1',
+    titles: trTitle,
+  })
+  const page = Object.values(data.query.pages)[0]
+  return page?.extract ? shorten(page.extract, 3) : null
+}
+
+function shorten(text, count) {
+  const clean = text
+    .replace(/\s*\([^()]*\)/g, '') // parantez içlerini at: "(Arapça: ...; Grekçe: ...)"
+    .replace(/\s+/g, ' ')
+    .trim()
+  // Yalnızca nokta + boşluk + BÜYÜK harf olan yerlerden böl; "4. yüzyıl" bölünmesin
+  const sentences = clean.split(/(?<=[.!?])\s+(?=[A-ZÇĞİÖŞÜ"“])/)
+  return sentences.slice(0, count).join(' ')
+}

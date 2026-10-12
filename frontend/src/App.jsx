@@ -12,6 +12,13 @@ import ExplorePage from './pages/ExplorePage'
 import LoginPage from './pages/LoginPage'
 import WelcomeSplash from './components/WelcomeSplash'
 import { auth } from './auth'
+import ProfilePage from './pages/ProfilePage'
+import OtherCountriesPage from './pages/OtherCountriesPage'
+import CountryRegions from './components/CountryRegions'
+import { countryName } from './countryNames'
+import StatsPage from './pages/StatsPage'
+import WishlistPage from './pages/WishlistPage'
+import MemoriesPage from './pages/MemoriesPage'
 
 export default function App() {
   const [user, setUser] = useState(auth.get()) // { token, username } veya null
@@ -21,11 +28,17 @@ export default function App() {
   const [foreignCities, setForeignCities] = useState([])              // yurt dışı şehirler
   const [selectedCountry, setSelectedCountry] = useState(null)        // { iso, name }
   const [stats, setStats] = useState(null)
+  const [wishes, setWishes] = useState([])  // gitmek istediğim yerler
+  const [homeIso, setHomeIso] = useState('792') // kullanıcının kendi ülkesi
   const [openList, setOpenList] = useState(null) // 'cities' | 'countries' | 'foreign'
   const [error, setError] = useState('')
   const [showSplash, setShowSplash] = useState(false) // giriş sonrası animasyon
 
   const refreshStats = () => api.getStats().then(setStats)
+  const reloadWishes = () => api.getWishes().then(setWishes)
+
+  // Haritada sarı gösterilecek ülkeler: henüz gidilmemiş dilekler
+  const wantedCountries = new Set(wishes.filter((w) => !w.isDone).map((w) => w.countryIso))
 
   // Token süresi dolarsa veya geçersizse api.js "auth:logout" olayı gönderir
   useEffect(() => {
@@ -38,8 +51,10 @@ export default function App() {
   useEffect(() => {
     if (!user) return
     setError('')
-    Promise.all([api.getCities(), api.getVisitedCountries(), api.getForeignCities(), api.getStats()])
-      .then(([cities, countries, foreign, s]) => {
+    Promise.all([api.getCities(), api.getVisitedCountries(), api.getForeignCities(), api.getStats(),api.getProfile(),api.getWishes()])
+      .then(([cities, countries, foreign, s, profile, wishList]) => {
+        setWishes(wishList)
+        setHomeIso(profile.homeCountryIso)
         setVisitedCities(new Set(cities.filter((c) => c.isVisited).map((c) => c.plateCode)))
         setVisitedCountries(new Set(countries.map((c) => c.isoNumeric)))
         setForeignCities(foreign)
@@ -53,6 +68,12 @@ export default function App() {
     setUser(result)
     setPage('home')
     setShowSplash(true)
+  }
+
+  const handleUsernameChange = (username) => {
+  const next = { ...user, username }
+  auth.save(next)
+  setUser(next)
   }
 
   const handleLogout = () => {
@@ -128,7 +149,8 @@ export default function App() {
 
   return (
     <div className="layout">
-        {showSplash && <WelcomeSplash username={user.username} onDone={() => setShowSplash(false)} />}      <Sidebar
+        {showSplash && <WelcomeSplash username={user.username} onDone={() => setShowSplash(false)} />}      
+        <Sidebar
         page={page}
         onChange={(p) => { setPage(p); setOpenList(null) }}
         username={user.username}
@@ -149,8 +171,7 @@ export default function App() {
             onNavigate={setPage}
           />
         )}
-
-        {!openList && page === 'turkey' && (
+        {!openList && page === 'turkey' && homeIso === '792' && (
           <>
             <div className="page-head">
               <h1>Türkiye</h1>
@@ -162,6 +183,25 @@ export default function App() {
           </>
         )}
 
+        {!openList && page === 'turkey' && homeIso !== '792' && (
+          <>
+            <div className="page-head">
+              <h1>{countryName(homeIso)}</h1>
+              <p className="subtitle">Gittiğin bölgeye tıkla, tekrar tıklarsan kaldırılır.</p>
+            </div>
+            <CountryRegions key={homeIso} iso={homeIso} />
+          </>
+        )}
+        {!openList && page === 'wishlist' && (
+          <WishlistPage wishes={wishes} foreignCities={foreignCities} onChange={reloadWishes} />
+        )}
+
+        {!openList && page === 'stats' && <StatsPage visitedCountries={visitedCountries} visitedCities={visitedCities} wishes={wishes} />}
+
+        {!openList && page === 'regions' && (
+          <OtherCountriesPage countries={[...visitedCountries].filter((iso) => iso !== homeIso)} />
+        )}
+
         {!openList && page === 'world' && (
           <>
             <div className="page-head">
@@ -169,8 +209,9 @@ export default function App() {
               <p className="subtitle">Gittiğin ülkeye tıkla, altta şehir ekleyebilirsin.</p>
             </div>
             <div className="map-card">
-              <WorldMap visited={visitedCountries} selectedIso={selectedIso} onCountryClick={handleCountryClick} />
+              <WorldMap visited={visitedCountries} wanted={wantedCountries} selectedIso={selectedIso} onCountryClick={handleCountryClick} />
             </div>
+            
             <CountryPanel
               country={selectedCountry}
               cities={citiesOfSelected}
@@ -182,8 +223,9 @@ export default function App() {
         )}
 
         {!openList && page === 'explore' && <ExplorePage />}
-
         {!openList && page === 'trips' && <TripsPage />}
+        {!openList && page === 'memories' && <MemoriesPage />}
+        {!openList && page === 'profile' && <ProfilePage stats={stats} onUsernameChange={handleUsernameChange} onHomeCountryChange={setHomeIso}/>}
       </main>
     </div>
   )

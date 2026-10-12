@@ -2,6 +2,8 @@ import { auth } from './auth'
 
 // Backend adresi — dotnet run çıktısındaki porta göre değiştir
 const API_URL = 'http://localhost:5000/api'
+// Yüklenen dosyaların adresi: http://localhost:5000/uploads/...
+export const FILE_BASE = API_URL.replace(/\/api$/, '')
 
 // Tüm istekler buradan geçer: token varsa "Authorization" başlığına eklenir.
 // Backend 401 dönerse oturum düşmüş demektir → uygulamaya haber veriyoruz.
@@ -10,7 +12,8 @@ async function send(path, options = {}) {
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      // Dosya yüklerken (FormData) Content-Type'ı tarayıcı kendisi ayarlar
+      ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   })
@@ -72,11 +75,48 @@ export const api = {
   deleteStop: (stopId) => send(`/trips/stops/${stopId}`, { method: 'DELETE' }),
   moveStop: (stopId, direction) =>
     send(`/trips/stops/${stopId}/move?direction=${direction}`, { method: 'POST' }),
-
+    addActivity: (tripId, dayNumber, text) =>
+    request(`/trips/${tripId}/activities`, { method: 'POST', body: JSON.stringify({ dayNumber, text }) }),
+    deleteActivity: (activityId) => send(`/trips/activities/${activityId}`, { method: 'DELETE' }),
+    setDayCount: (tripId, dayCount) =>
+      send(`/trips/${tripId}/days`, { method: 'PUT', body: JSON.stringify({ dayCount }) }),
+    setBudget: (tripId, budget) =>
+    send(`/trips/${tripId}/budget`, { method: 'PUT', body: JSON.stringify(budget) }),
+    addExpense: (tripId, expense) =>
+      request(`/trips/${tripId}/expenses`, { method: 'POST', body: JSON.stringify(expense) }),
+    deleteExpense: (expenseId) => send(`/trips/expenses/${expenseId}`, { method: 'DELETE' }),
+    getWishes: () => request('/wishes'),
+    addWish: (wish) => request('/wishes', { method: 'POST', body: JSON.stringify(wish) }),
+    toggleWishDone: (id) => request(`/wishes/${id}/done`, { method: 'POST' }),
+    deleteWish: (id) => send(`/wishes/${id}`, { method: 'DELETE' }),
+    addBooking: (tripId, booking) =>
+    request(`/trips/${tripId}/bookings`, { method: 'POST', body: JSON.stringify(booking) }),
+  deleteBooking: (bookingId) => send(`/trips/bookings/${bookingId}`, { method: 'DELETE' }),
+  setRating: (tripId, rating) =>
+    send(`/trips/${tripId}/rating`, { method: 'PUT', body: JSON.stringify({ rating }) }),
+  addNote: (tripId, note) =>
+    request(`/trips/${tripId}/notes`, { method: 'POST', body: JSON.stringify(note) }),
+  deleteNote: (noteId) => send(`/trips/notes/${noteId}`, { method: 'DELETE' }),
+  uploadFile: (tripId, file, kind, caption = '') => {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('kind', kind)
+    form.append('caption', caption)
+    return request(`/trips/${tripId}/files`, { method: 'POST', body: form })
+  },
+  deleteFile: (fileId) => send(`/trips/files/${fileId}`, { method: 'DELETE' }),
   getLandmarks: () => request('/landmarks'),
   getSavedLandmarks: () => request('/landmarks/saved'),
   toggleLandmarkWanted: (id) => request(`/landmarks/${id}/wanted`, { method: 'POST' }),
   toggleLandmarkVisited: (id) => request(`/landmarks/${id}/visited`, { method: 'POST' }),
 
   getStats: () => request('/stats'),
+
+  getRegions: (iso) => request(`/regions/${iso}`),
+  toggleRegion: (iso, regionName) =>
+  request(`/regions/${iso}/toggle`, { method: 'POST', body: JSON.stringify({ regionName }) }),
+  getProfile: () => request('/profile'),
+  updateProfile: (profile) => request('/profile', { method: 'PUT', body: JSON.stringify(profile) }),
+  changePassword: (currentPassword, newPassword) =>
+  send('/profile/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) }),
 }

@@ -4,7 +4,19 @@ import { formatDate, tripStatus } from '../countryNames'
 import TripDetail from '../components/TripDetail'
 import TripRouteMap from '../components/TripRouteMap'
 
-const EMPTY = { title: '', startDate: '', endDate: '' }
+const EMPTY = { title: '', startDate: '', endDate: '', dayCount: 1 }
+
+// İki tarih arasındaki gün sayısı (ikisi de dahil): 10 Ekim – 12 Ekim → 3
+const daysBetween = (start, end) => Math.round((new Date(end) - new Date(start)) / 86400000) + 1
+
+// Tarih değişince, iki tarih de seçiliyse gün sayısını kendimiz hesaplayalım
+function withDates(form, changes) {
+  const next = { ...form, ...changes }
+  if (next.startDate && next.endDate && next.endDate >= next.startDate) {
+    next.dayCount = Math.min(daysBetween(next.startDate, next.endDate), 60)
+  }
+  return next
+}
 
 function TripCard({ trip, onOpen }) {
   const status = tripStatus(trip.startDate, trip.endDate)
@@ -31,6 +43,7 @@ function TripCard({ trip, onOpen }) {
           {trip.startDate
             ? `${formatDate(trip.startDate)}${trip.endDate ? ` – ${formatDate(trip.endDate)}` : ''}`
             : 'Tarih belirlenmedi'}
+            {` · ${trip.dayCount} gün`}
         </div>
         {trip.stops.length > 0 && (
           <div className="trip-chain">{trip.stops.map((s) => s.place).join(' → ')}</div>
@@ -63,6 +76,7 @@ export default function TripsPage() {
         title: form.title,
         startDate: form.startDate || null,
         endDate: form.endDate || null,
+        dayCount: Number(form.dayCount),
       })
     } catch {
       setError('Gezi kaydedilemedi. Backend çalışıyor mu?')
@@ -97,14 +111,29 @@ export default function TripsPage() {
             placeholder="ör. Karadeniz turu"
           />
         </label>
+
         <label className="field">
           <span>Başlangıç</span>
-          <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+          <input type="date" value={form.startDate} onChange={(e) => setForm(withDates(form, { startDate: e.target.value }))} />
         </label>
+
         <label className="field">
           <span>Bitiş</span>
-          <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+          <input type="date" value={form.endDate} onChange={(e) => setForm(withDates(form, { endDate: e.target.value }))} />
         </label>
+
+        <label className="field day-count-field">
+          <span>Kaç gün?</span>
+          <input
+            type="number"
+            min={1}
+            max={60}
+            required
+            value={form.dayCount}
+            onChange={(e) => setForm({ ...form, dayCount: e.target.value })}
+          />
+        </label>
+
         <button type="submit" className="primary-btn">Gezi oluştur</button>
       </form>
       {error && <p className="form-error">{error}</p>}

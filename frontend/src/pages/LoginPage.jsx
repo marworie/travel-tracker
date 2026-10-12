@@ -9,6 +9,7 @@ export default function LoginPage({ onLogin }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [password2, setPassword2] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -81,14 +82,28 @@ export default function LoginPage({ onLogin }) {
 
           <label className="field">
             <span>Şifre</span>
-            <input
-              required
-              type="password"
-              minLength={6}
-              autoComplete={isRegister ? 'new-password' : 'current-password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+           <div className="password-wrap">
+              <input
+                required
+                type={showPassword ? 'text' : 'password'}
+                minLength={6}
+                autoComplete={isRegister ? 'new-password' : 'current-password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                className="password-toggle"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                  {showPassword && <path d="M4 4l16 16" />}
+                </svg>
+              </button>
+            </div>
           </label>
 
           {isRegister && (
@@ -96,7 +111,7 @@ export default function LoginPage({ onLogin }) {
               <span>Şifre tekrar</span>
               <input
                 required
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 minLength={6}
                 autoComplete="new-password"
                 value={password2}

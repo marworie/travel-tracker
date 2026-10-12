@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps'
 import worldData from 'world-atlas/countries-110m.json'
 
-export default function WorldMap({ visited, selectedIso, onCountryClick }) {
+export default function WorldMap({ visited, wanted, selectedIso, onCountryClick }) {
   const [hovered, setHovered] = useState('')
 
   return (
@@ -27,6 +27,7 @@ export default function WorldMap({ visited, selectedIso, onCountryClick }) {
 
                   let className = 'region'
                   if (visited.has(iso)) className += ' visited-country'
+                    else if (wanted?.has(iso)) className += ' wanted-country' // gitmek istenen
                   if (iso === selectedIso) className += ' selected'
 
                   return (

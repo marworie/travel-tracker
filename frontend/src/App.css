@@ -184,8 +184,12 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 .region.visited-country { fill: var(--visited); }
 .region.visited-city:hover,
 .region.visited-country:hover { fill: #245a48; }
+
+.region.wanted-country { fill: #e6c35c; }
+.region.wanted-country:hover { fill: #d9a21b; }
 .region.selected,
-.region.visited-country.selected { fill: var(--selected); }
+.region.visited-country.selected,
+.region.wanted-country.selected { fill: var(--selected); }
 
 /* ===== Ülke paneli ===== */
 .panel {
@@ -643,6 +647,10 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 .landmark-card.seen { border-color: var(--visited); }
 .landmark-photo {
   display: block;
+  width: 100%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
   aspect-ratio: 4 / 3;
   background: var(--land);
   position: relative;
@@ -781,7 +789,20 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   align-items: center;
   gap: 8px;
 }
-.user-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.user-link {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  border: none; background: none; padding: 4px 6px; margin-left: -6px; border-radius: var(--radius);
+  font: inherit; font-weight: 500; color: var(--ink); cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.user-link:hover, .user-link.active { background: var(--visited-soft); }
+.user-avatar {
+  flex: none; width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--visited); color: #fff; font-size: 0.8rem; font-weight: 600;
+}
+
 .logout-btn {
   border: none;
   background: none;
@@ -842,3 +863,372 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   animation: splash-rise 0.5s ease-out 0.4s both;
 }
 @keyframes splash-rise { from { opacity: 0; transform: translateY(8px); } }
+
+/* ===== Profil ===== */
+.profile-card { display: flex; gap: 24px; align-items: flex-start; padding: 24px; }
+.profile-avatar {
+  flex: none; width: 84px; height: 84px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--visited); color: #fff;
+  font-family: var(--condensed); font-size: 2rem; font-weight: 600;
+}
+.profile-info { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.profile-info .primary-btn { align-self: flex-start; margin-top: 10px; }
+.profile-name { font-family: var(--condensed); font-size: 1.6rem; margin: 0; }
+.profile-meta { color: var(--muted); margin: 0; font-size: 0.9rem; }
+.profile-bio { margin: 8px 0 0; line-height: 1.5; white-space: pre-line; }
+.profile-bio.empty { color: var(--muted); font-style: italic; }
+
+.profile-form { display: flex; flex-direction: column; gap: 12px; flex: 1; max-width: 460px; }
+.field textarea {
+  font-family: inherit; font-size: 0.95rem; padding: 9px 12px; resize: vertical;
+  border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink);
+}
+.field textarea:focus { outline: none; border-color: var(--selected); }
+.field-count { align-self: flex-end; font-size: 0.75rem; }
+.profile-actions { display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
+.profile-actions .primary-btn { align-self: auto; }
+
+.profile-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 14px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.profile-stats div { display: flex; flex-direction: column; padding: 14px 20px; border-right: 1px solid var(--line); }
+.profile-stats div:last-child { border-right: none; }
+.profile-stats strong { font-family: var(--condensed); font-size: 1.8rem; font-weight: 600; }
+.profile-stats span { color: var(--muted); font-size: 0.85rem; }
+.form-ok { color: var(--visited); margin: 8px 0 0; font-size: 0.9rem; }
+
+@media (max-width: 640px) {
+  .profile-card { flex-direction: column; }
+}
+
+/* Şifre göster/gizle */
+.password-wrap { position: relative; display: flex; }
+.password-wrap input { flex: 1; padding-right: 42px !important; }
+.password-toggle {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  width: 34px; height: 34px; display: grid; place-items: center;
+  border: none; background: none; border-radius: var(--radius); color: var(--muted); cursor: pointer;
+}
+.password-toggle:hover { color: var(--ink); background: var(--paper); }
+.password-toggle svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ===== Diğer ülkeler / bölge haritaları ===== */
+.country-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.chip {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 0.9rem; cursor: pointer;
+}
+.chip:hover { border-color: var(--visited); }
+.chip.active { background: var(--visited); border-color: var(--visited); color: #fff; }
+.region-summary { margin: 0 0 10px; color: var(--muted); }
+.region-summary strong { color: var(--ink); font-size: 1.1rem; }
+.map-credit { margin: 8px 0 0; font-size: 0.75rem; color: var(--muted); }
+.map-credit a { color: inherit; }
+
+/* ===== Keşfet: yer detayı ===== */
+.landmark-back { display: block; margin-top: 18px; }
+.landmark-detail {
+  display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; align-items: start;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px;
+}
+.landmark-detail-photo { aspect-ratio: 4 / 3; background: var(--land); border-radius: 4px; overflow: hidden; display: grid; place-items: center; }
+.landmark-detail-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.landmark-detail-photo span { color: var(--muted); font-family: var(--condensed); font-size: 1.2rem; }
+.landmark-detail-body { display: flex; flex-direction: column; gap: 6px; }
+.landmark-detail-body h1 { margin: 0; font-family: var(--condensed); font-weight: 600; font-size: 2rem; line-height: 1.1; }
+.landmark-summary { margin: 10px 0 6px; line-height: 1.6; }
+.landmark-detail .unesco-actions { margin-top: 8px; max-width: 320px; }
+.landmark-detail .credit { margin-top: 10px; }
+
+@media (max-width: 760px) {
+  .landmark-detail { grid-template-columns: 1fr; }
+}
+
+/* Keşfet: koleksiyon sekmeleri */
+.collection-tabs { margin-top: 18px; }
+.collection-tabs + .collection { margin-top: 20px; }
+.chip-count { opacity: 0.7; font-size: 0.8rem; margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+/* ===== Gezi: gün gün plan ===== */
+.day-count-field input { width: 90px; }
+.trip-days { margin-bottom: 26px; }
+.trip-days-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.trip-days-head h2 { margin: 0; }
+.day-stepper { display: flex; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
+.day-stepper button {
+  width: 30px; height: 30px; border: 1px solid var(--line); background: var(--surface);
+  border-radius: var(--radius); font-size: 1.1rem; line-height: 1; cursor: pointer; color: var(--ink);
+}
+.day-stepper button:disabled { opacity: 0.4; cursor: default; }
+.day-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.day-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
+}
+.day-card h3 { margin: 0; font-family: var(--condensed); font-weight: 600; font-size: 1.2rem; display: flex; align-items: baseline; gap: 10px; }
+.day-date { font-family: var(--sans); font-weight: 400; font-size: 0.85rem; color: var(--muted); }
+.day-empty { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.activity-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.activity-list li {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+  padding-left: 12px; border-left: 2px solid var(--visited); line-height: 1.4;
+}
+.activity-list button { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 2px; }
+.activity-list button:hover { color: var(--danger); }
+.activity-form { display: flex; gap: 6px; margin-top: auto; }
+.activity-form input {
+  flex: 1; min-width: 0; font: inherit; font-size: 0.9rem; padding: 7px 10px;
+  border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
+}
+.activity-form input:focus { outline: none; border-color: var(--selected); }
+.activity-form button {
+  border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius);
+  padding: 0 12px; cursor: pointer; font: inherit; font-size: 0.9rem;
+}
+.activity-form button:hover { border-color: var(--ink); }
+.section-title { margin-top: 4px; }
+
+/* ===== İstatistikler ===== */
+.stat-tiles {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.stat-tiles div { display: flex; flex-direction: column; gap: 2px; padding: 16px 20px; border-right: 1px solid var(--line); min-width: 0; }
+.stat-tiles div:last-child { border-right: none; }
+.stat-tiles strong { font-family: var(--condensed); font-size: 1.8rem; font-weight: 600; line-height: 1.1; }
+.stat-tiles span { color: var(--muted); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.continent-list li { grid-template-columns: 9em 1fr 7.5em; }
+
+.year-chart { display: flex; align-items: flex-end; gap: 18px; height: 180px; padding-top: 8px; }
+.year-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; width: 44px; gap: 6px; }
+.year-bar { width: 100%; min-height: 4px; background: var(--visited); border-radius: 3px 3px 0 0; }
+.year-count { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.9rem; }
+.year-label { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 760px) {
+  .stat-tiles { grid-template-columns: 1fr 1fr; }
+  .stat-tiles div:nth-child(2) { border-right: none; }
+  .stat-tiles div:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+}
+
+/* Dünya: ülkeye yapılan geziler */
+.country-trips { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.country-trips h4 { margin: 0 0 8px; font-size: 0.95rem; }
+.country-trips ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.country-trips li { display: flex; justify-content: space-between; gap: 12px; }
+.country-trip-title { font-weight: 500; }
+
+/* ===== Gezi: bütçe ve harcamalar ===== */
+.trip-budget { margin-bottom: 26px; }
+.budget-form { margin-bottom: 12px; align-items: flex-end; }
+.budget-form .primary-btn { align-self: auto; }
+.budget-summary {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.budget-summary div { display: flex; flex-direction: column; gap: 2px; padding: 12px 16px; border-right: 1px solid var(--line); min-width: 0; }
+.budget-summary div:last-child { border-right: none; }
+.budget-summary span { color: var(--muted); font-size: 0.82rem; }
+.budget-summary strong { font-family: var(--condensed); font-size: 1.35rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.budget-summary strong.over { color: var(--danger); }
+.budget-bar { height: 8px; background: var(--land); border-radius: 4px; overflow: hidden; margin: 10px 0 14px; }
+.budget-bar span { display: block; height: 100%; background: var(--visited); }
+.budget-bar span.over { background: var(--danger); }
+.category-list { margin: 6px 0 14px; }
+.category-list li { grid-template-columns: 10em 1fr 8em; }
+.expense-form { margin-top: 0; }
+.amount-input { width: 120px; }
+.expense-list { list-style: none; margin: 12px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.expense-list li {
+  display: grid; grid-template-columns: 7em 1fr auto 24px; gap: 12px; align-items: baseline;
+  padding: 9px 4px; border-bottom: 1px solid var(--line); font-size: 0.93rem;
+}
+.expense-cat { color: var(--muted); font-size: 0.85rem; }
+.expense-amount { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+.expense-list button { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; }
+.expense-list button:hover { color: var(--danger); }
+
+@media (max-width: 760px) {
+  .budget-summary { grid-template-columns: 1fr 1fr; }
+  .expense-list li { grid-template-columns: 1fr auto 24px; }
+  .expense-cat { display: none; }
+}
+
+/* Bütçe: gösterim para birimi */
+.budget-head-actions { display: flex; align-items: center; gap: 16px; }
+.view-currency { display: flex; align-items: center; gap: 6px; font-size: 0.88rem; color: var(--muted); }
+.view-currency select {
+  font: inherit; font-size: 0.88rem; padding: 4px 8px; border: 1px solid var(--line);
+  border-radius: var(--radius); background: #fff; color: var(--ink);
+}
+.rate-note { margin: -6px 0 10px; }
+
+/* ===== Gitmek istediklerim ===== */
+.wish-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 14px; margin-bottom: 18px; }
+.wish-form .wide { grid-column: 1 / -1; }
+.wish-form .field { min-width: 0; }
+.wish-form .field input, .wish-form .field select { width: 100%; }
+.money-input { display: flex; gap: 6px; }
+.money-input input { flex: 1; min-width: 0; }
+.money-input select { width: auto !important; }
+.wish-form-actions { display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
+.wish-form-actions .primary-btn { align-self: auto; }
+.wish-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.wish-toolbar .country-chips { margin: 0; }
+.wish-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+.wish-card {
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--land);
+  border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px;
+}
+.wish-card.priority-3 { border-left-color: var(--danger); }
+.wish-card.priority-2 { border-left-color: var(--marker); }
+.wish-card.done { border-left-color: var(--visited); opacity: 0.85; }
+.wish-card h3 { margin: 4px 0 0; font-family: var(--condensed); font-weight: 600; font-size: 1.25rem; }
+.wish-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.wish-tag { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--visited); }
+.wish-priority { font-size: 0.78rem; color: var(--muted); }
+.wish-meta { margin: 2px 0 0; display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.85rem; color: var(--muted); }
+.wish-meta:empty { display: none; }
+.wish-note { margin: 4px 0 0; font-size: 0.9rem; line-height: 1.4; }
+
+@media (max-width: 760px) {
+  .wish-form { grid-template-columns: 1fr; }
+}
+
+/* ===== Gezi: ulaşım ve konaklama ===== */
+.trip-bookings { margin-bottom: 26px; }
+.booking-form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 14px; margin-bottom: 12px; }
+.booking-form .field { min-width: 0; }
+.booking-form .field input, .booking-form .field select { width: 100%; }
+.booking-form .span-2 { grid-column: span 2; }
+.booking-form .span-3 { grid-column: 1 / -1; }
+.booking-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.booking {
+  display: grid; grid-template-columns: 7.5em 1fr auto 24px; gap: 14px; align-items: center;
+  background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--selected);
+  border-radius: var(--radius); padding: 12px 14px;
+}
+.booking-hotel { border-left-color: var(--marker); }
+.booking-car { border-left-color: var(--visited); }
+.booking-type {
+  display: flex; flex-direction: column; gap: 2px;
+  font-size: 0.75rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted);
+}
+.booking-day { font-size: 0.78rem; font-weight: 400; text-transform: none; letter-spacing: 0; }
+.booking-title { font-weight: 600; }
+.booking-times { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 0.88rem; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.booking-length { color: var(--ink); font-weight: 500; }
+.booking.next { box-shadow: 0 0 0 2px var(--visited-soft); }
+.booking-next {
+  margin-left: 8px; font-size: 0.72rem; font-weight: 600; color: var(--visited);
+  background: var(--visited-soft); border-radius: 999px; padding: 2px 8px; vertical-align: middle;
+}
+.booking-ref {
+  font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; letter-spacing: 0.05em;
+  border: 1px dashed var(--line); border-radius: 4px; padding: 3px 8px; background: #fff;
+  color: var(--ink); cursor: copy;
+}
+.booking-ref:hover { border-color: var(--ink); }
+.booking-delete { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; }
+.booking-delete:hover { color: var(--danger); }
+
+@media (max-width: 760px) {
+  .booking-form { grid-template-columns: 1fr; }
+  .booking-form .span-2 { grid-column: auto; }
+  .booking { grid-template-columns: 1fr auto 24px; }
+  .booking-type { grid-column: 1 / -1; }
+}
+
+/* ===== Gezi: anılar ===== */
+.trip-memories { margin-bottom: 26px; }
+.rating { display: flex; align-items: center; gap: 10px; }
+.stars { display: flex; }
+.star { border: none; background: none; padding: 0 2px; font-size: 1.5rem; line-height: 1; color: var(--line); cursor: pointer; }
+.star.on { color: var(--marker); }
+.memory-block {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 12px;
+}
+.memory-block h3 { margin: 0 0 10px; font-size: 1rem; }
+.memory-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.memory-head h3 { margin: 0; }
+.upload-btn {
+  border: 1px solid var(--line); background: #fff; border-radius: var(--radius);
+  padding: 6px 12px; font-size: 0.88rem; cursor: pointer;
+}
+.upload-btn:hover { border-color: var(--ink); }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.photo { position: relative; margin: 0; aspect-ratio: 1; border-radius: 4px; overflow: hidden; background: var(--land); }
+.photo img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+.photo-delete {
+  position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%;
+  border: none; background: rgba(0, 0, 0, 0.55); color: #fff; cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+.photo:hover .photo-delete { opacity: 1; }
+.note-form textarea {
+  width: 100%; font: inherit; font-size: 0.95rem; padding: 10px 12px; resize: vertical;
+  border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink);
+}
+.note-form textarea:focus { outline: none; border-color: var(--selected); }
+.note-form-bottom { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+.note-form-bottom select {
+  font: inherit; font-size: 0.9rem; padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
+}
+.note-form-bottom .primary-btn { align-self: auto; }
+.note-list { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.note-list li { border-left: 2px solid var(--visited); padding-left: 12px; }
+.note-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); }
+.note-meta button { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 1rem; }
+.note-meta button:hover { color: var(--danger); }
+.note-list p { margin: 4px 0 0; line-height: 1.5; white-space: pre-line; }
+.doc-list { list-style: none; margin: 0; padding: 0; }
+.doc-list li { display: grid; grid-template-columns: 4em 1fr auto 24px; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.doc-list li:first-child { border-top: none; }
+.doc-type { font-size: 0.72rem; font-weight: 600; color: var(--muted); }
+.doc-list a { color: var(--selected); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-list button { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; }
+.doc-list button:hover { color: var(--danger); }
+.lightbox {
+  position: fixed; inset: 0; z-index: 900; background: rgba(15, 20, 18, 0.85);
+  display: grid; place-items: center; padding: 24px; cursor: zoom-out;
+}
+.lightbox img { max-width: 100%; max-height: 100%; border-radius: 4px; }
+
+/* ===== Anılar sayfası ===== */
+.memory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.memory-card {
+  display: flex; flex-direction: column; text-align: left; padding: 0; overflow: hidden; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); font: inherit; color: inherit;
+}
+.memory-card:hover { border-color: var(--muted); }
+.memory-cover { aspect-ratio: 4 / 3; background: var(--land); display: grid; place-items: center; overflow: hidden; }
+.memory-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.memory-cover span { font-family: var(--condensed); font-size: 1.2rem; color: var(--muted); padding: 12px; text-align: center; }
+.memory-card-body { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; }
+.memory-card-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; font-size: 0.85rem; color: var(--muted); }
+.stars-static { color: var(--marker); letter-spacing: 1px; }
+.stars-static span { color: var(--line); }
+
+/* ===== Dünya: ülke bilgi kartı ===== */
+.country-info { display: flex; gap: 16px; align-items: flex-start; margin: 12px 0 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.country-flag { width: 72px; border: 1px solid var(--line); border-radius: 3px; flex: none; }
+.country-info dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; font-size: 0.9rem; }
+.country-info dt { color: var(--muted); }
+.country-info dd { margin: 0; }
+
+/* ===== İstatistikler: rozetler ===== */
+.badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.badge { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+.badge-medal {
+  flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--land); color: #fff; font-size: 1.1rem;
+}
+.badge.earned { border-color: var(--marker); background: #fffaf0; }
+.badge.earned .badge-medal { background: var(--marker); }
+.badge-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.badge-body strong { font-size: 0.95rem; }
+.badge:not(.earned) .badge-body strong { color: var(--muted); }
+.badge-desc { font-size: 0.8rem; color: var(--muted); }
+.badge-progress { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin-top: 4px; font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }

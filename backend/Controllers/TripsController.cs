@@ -3,14 +3,35 @@ using TravelTracker.Api.Models;
 using TravelTracker.Api.Repositories;
 
 namespace TravelTracker.Api.Controllers;
-
 [ApiController]
 [Route("api/trips")]
 public class TripsController : ControllerBase
 {
-    private readonly ITripRepository _repo;
+    private static readonly string[] BookingTypes = { "flight", "bus", "train", "ferry", "car", "hotel" };
+    private static readonly string[] Categories = { "flight", "transport", "stay", "food", "activity", "personal", "other" };
+    // Yüklenebilecek dosya türleri ve en büyük boyut
+    private static readonly string[] PhotoTypes = { "image/jpeg", "image/png", "image/webp", "image/gif" };
+    private const long MaxFileBytes = 10 * 1024 * 1024; // 10 MB
 
-    public TripsController(ITripRepository repo) => _repo = repo;
+    private readonly ITripRepository _repo;
+    private readonly IWebHostEnvironment _env;
+
+    public TripsController(ITripRepository repo, IWebHostEnvironment env)
+    {
+        _repo = repo;
+        _env = env;
+    }
+
+    // Dosyaların kaydedileceği klasör: wwwroot/uploads
+    private string UploadFolder
+    {
+        get
+        {
+            var folder = Path.Combine(_env.ContentRootPath, "wwwroot", "uploads");
+            Directory.CreateDirectory(folder); // yoksa oluştur
+            return folder;
+        }
+    }
 
     // GET api/trips
     [HttpGet]
@@ -32,6 +53,8 @@ public class TripsController : ControllerBase
             return BadRequest("Gezi adı gerekli.");
         if (req.StartDate.HasValue && req.EndDate.HasValue && req.EndDate < req.StartDate)
             return BadRequest("Bitiş tarihi başlangıçtan önce olamaz.");
+        if (req.DayCount < 1 || req.DayCount > 60)
+            return BadRequest("Gün sayısı 1 ile 60 arasında olmalı.");
 
         req.Title = req.Title.Trim();
         return Ok(await _repo.CreateAsync(req));
@@ -42,6 +65,7 @@ public class TripsController : ControllerBase
     public async Task<IActionResult> Delete(int id)
         => await _repo.DeleteAsync(id) ? NoContent() : NotFound();
 
+    
     // POST api/trips/3/stops
     [HttpPost("{id:int}/stops")]
     public async Task<IActionResult> AddStop(int id, [FromBody] AddStopRequest req)
@@ -58,6 +82,7 @@ public class TripsController : ControllerBase
     public async Task<IActionResult> DeleteStop(int stopId)
         => await _repo.DeleteStopAsync(stopId) ? NoContent() : NotFound();
 
+    
     // POST api/trips/stops/12/move?direction=up
     [HttpPost("stops/{stopId:int}/move")]
     public async Task<IActionResult> MoveStop(int stopId, [FromQuery] string direction)
@@ -66,6 +91,162 @@ public class TripsController : ControllerBase
             return BadRequest("direction 'up' veya 'down' olmalı.");
 
         await _repo.MoveStopAsync(stopId, direction == "up");
+        return NoContent();
+    }
+
+    // POST api/trips/3/activities  { "dayNumber": 2, "text": "Ayasofya" }
+    [HttpPost("{id:int}/activities")]
+    public async Task<IActionResult> AddActivity(int id, [FromBody] AddActivityRequest req)
+    {
+        var trip = await _repo.GetByIdAsync(id);
+        if (trip is null) return NotFound();
+        if (req.DayNumber < 1 || req.DayNumber > trip.DayCount)
+            return BadRequest("Böyle bir gün yok.");
+        if (string.IsNullOrWhiteSpace(req.Text))
+            return BadRequest("Yapılacak boş olamaz.");
+
+        req.Text = req.Text.Trim();
+        return Ok(await _repo.AddActivityAsync(id, req));
+    }
+
+    // DELETE api/trips/activities/7
+    [HttpDelete("activities/{activityId:int}")]
+    public async Task<IActionResult> DeleteActivity(int activityId)
+        => await _repo.DeleteActivityAsync(activityId) ? NoContent() : NotFound();
+
+    // PUT api/trips/3/days  { "dayCount": 5 }
+    [HttpPut("{id:int}/days")]
+    public async Task<IActionResult> SetDayCount(int id, [FromBody] SetDayCountRequest req)
+    {
+        if (req.DayCount < 1 || req.DayCount > 60)
+            return BadRequest("Gün sayısı 1 ile 60 arasında olmalı.");
+
+        await _repo.SetDayCountAsync(id, req.DayCount);
+        return NoContent();
+    }
+
+    // PUT api/trips/3/budget  { "budget": 25000, "currency": "TRY", "travelerCount": 2 }
+    [HttpPut("{id:int}/budget")]
+    public async Task<IActionResult> SetBudget(int id, [FromBody] SetBudgetRequest req)
+    {
+        if (req.Budget is < 0m) return BadRequest("Bütçe negatif olamaz.");
+        if (req.Currency.Length != 3) return BadRequest("Para birimi 3 harfli olmalı (TRY, EUR...).");
+        if (req.TravelerCount < 1 || req.TravelerCount > 50) return BadRequest("Kişi sayısı 1 ile 50 arasında olmalı.");
+
+        req.Currency = req.Currency.ToUpperInvariant();
+        await _repo.SetBudgetAsync(id, req);
+        return NoContent();
+    }
+
+    // POST api/trips/3/expenses
+    [HttpPost("{id:int}/expenses")]
+    public async Task<IActionResult> AddExpense(int id, [FromBody] AddExpenseRequest req)
+    {
+        if (!Categories.Contains(req.Category)) return BadRequest("Geçersiz kategori.");
+        if (req.Amount <= 0) return BadRequest("Tutar sıfırdan büyük olmalı.");
+        if (req.Currency.Length != 3) return BadRequest("Para birimi 3 harfli olmalı.");
+
+        // Açıklama isteğe bağlı: boşsa NULL kaydedilir
+        req.Description = string.IsNullOrWhiteSpace(req.Description) ? null : req.Description.Trim();
+        req.Currency = req.Currency.ToUpperInvariant();
+        return Ok(await _repo.AddExpenseAsync(id, req));
+    }
+
+    // DELETE api/trips/expenses/9
+    [HttpDelete("expenses/{expenseId:int}")]
+    public async Task<IActionResult> DeleteExpense(int expenseId)
+        => await _repo.DeleteExpenseAsync(expenseId) ? NoContent() : NotFound();
+
+    // POST api/trips/3/bookings
+    [HttpPost("{id:int}/bookings")]
+    public async Task<IActionResult> AddBooking(int id, [FromBody] AddBookingRequest req)
+    {
+        if (!BookingTypes.Contains(req.Type)) return BadRequest("Geçersiz rezervasyon türü.");
+        if (string.IsNullOrWhiteSpace(req.Title)) return BadRequest("Başlık gerekli.");
+        if (req.StartAt.HasValue && req.EndAt.HasValue && req.EndAt < req.StartAt)
+            return BadRequest("Bitiş zamanı başlangıçtan önce olamaz.");
+
+        req.Title = req.Title.Trim();
+        req.Reference = string.IsNullOrWhiteSpace(req.Reference) ? null : req.Reference.Trim().ToUpperInvariant();
+        req.Note = string.IsNullOrWhiteSpace(req.Note) ? null : req.Note.Trim();
+        return Ok(await _repo.AddBookingAsync(id, req));
+    }
+
+    // DELETE api/trips/bookings/5
+    [HttpDelete("bookings/{bookingId:int}")]
+    public async Task<IActionResult> DeleteBooking(int bookingId)
+        => await _repo.DeleteBookingAsync(bookingId) ? NoContent() : NotFound();
+
+    
+    // PUT api/trips/3/rating  { "rating": 5 }
+    [HttpPut("{id:int}/rating")]
+    public async Task<IActionResult> SetRating(int id, [FromBody] SetRatingRequest req)
+    {
+        if (req.Rating is < 1 or > 5) return BadRequest("Puan 1 ile 5 arasında olmalı.");
+        await _repo.SetRatingAsync(id, req.Rating);
+        return NoContent();
+    }
+
+    // POST api/trips/3/notes  { "dayNumber": 2, "text": "..." }
+    [HttpPost("{id:int}/notes")]
+    public async Task<IActionResult> AddNote(int id, [FromBody] AddNoteRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Text)) return BadRequest("Not boş olamaz.");
+        if (req.Text.Length > 2000) return BadRequest("Not en fazla 2000 karakter olabilir.");
+
+        req.Text = req.Text.Trim();
+        return Ok(await _repo.AddNoteAsync(id, req));
+    }
+
+    // DELETE api/trips/notes/4
+    [HttpDelete("notes/{noteId:int}")]
+    public async Task<IActionResult> DeleteNote(int noteId)
+        => await _repo.DeleteNoteAsync(noteId) ? NoContent() : NotFound();
+
+    // POST api/trips/3/files   (multipart/form-data: file, kind, caption)
+    [HttpPost("{id:int}/files")]
+    public async Task<IActionResult> UploadFile(int id, IFormFile file, [FromForm] string kind, [FromForm] string? caption)
+    {
+        if (file is null || file.Length == 0) return BadRequest("Dosya seçilmedi.");
+        if (file.Length > MaxFileBytes) return BadRequest("Dosya en fazla 10 MB olabilir.");
+        if (kind != "photo" && kind != "document") return BadRequest("Geçersiz dosya türü.");
+
+        var isPhoto = PhotoTypes.Contains(file.ContentType);
+        var isPdf = file.ContentType == "application/pdf";
+        if (kind == "photo" && !isPhoto) return BadRequest("Fotoğraf olarak sadece JPG, PNG, WEBP veya GIF yüklenebilir.");
+        if (kind == "document" && !isPhoto && !isPdf) return BadRequest("Belge olarak PDF veya resim yüklenebilir.");
+
+        // Kullanıcının dosya adını diskte kullanmıyoruz: çakışma ve güvenlik için rastgele ad veriyoruz
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var storedName = $"{Guid.NewGuid():N}{extension}";
+
+        await using (var stream = System.IO.File.Create(Path.Combine(UploadFolder, storedName)))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var saved = await _repo.AddFileAsync(new TripFile
+        {
+            TripId = id,
+            Kind = kind,
+            FileName = Path.GetFileName(file.FileName),
+            StoredName = storedName,
+            ContentType = file.ContentType,
+            SizeBytes = (int)file.Length,
+            Caption = string.IsNullOrWhiteSpace(caption) ? null : caption.Trim(),
+        });
+        return Ok(saved);
+    }
+
+    // DELETE api/trips/files/8   → hem kaydı hem diskteki dosyayı siler
+    [HttpDelete("files/{fileId:int}")]
+    public async Task<IActionResult> DeleteFile(int fileId)
+    {
+        var deleted = await _repo.DeleteFileAsync(fileId);
+        if (deleted is null) return NotFound();
+
+        var path = Path.Combine(UploadFolder, deleted.StoredName);
+        if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
         return NoContent();
     }
 }

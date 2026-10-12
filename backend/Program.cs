@@ -44,6 +44,8 @@ builder.Services.AddScoped<IUnescoRepository, UnescoRepository>();
 builder.Services.AddScoped<ITripRepository, TripRepository>();
 builder.Services.AddScoped<ILandmarkRepository, LandmarkRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRegionRepository, RegionRepository>();
+builder.Services.AddScoped<IWishRepository, WishRepository>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
 // JWT doğrulama: gelen token'ın imzası, süresi, kimin ürettiği kontrol edilir
@@ -92,8 +94,9 @@ if (app.Environment.IsDevelopment())
 
 // Sıra önemli: CORS → kimlik doğrulama → yetkilendirme → controller'lar
 app.UseCors("Frontend");
+app.UseStaticFiles(); // wwwroot klasöründeki dosyaları (yüklenen fotoğraflar) sunar
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-
+app.MapGet("/", () => Results.Redirect("/swagger")).AllowAnonymous();
 app.Run();
