@@ -100,6 +100,11 @@ npm run dev
 ```
 Uygulama `http://localhost:5180` adresinde açılır. İlk açılışta **Kayıt ol** sekmesinden bir hesap oluştur.
 
+### 4. Testler
+```bash
+dotnet test tests/TravelTracker.Tests
+```
+
 ## Veri kaynakları
 
 | Veri | Kaynak | Lisans |
