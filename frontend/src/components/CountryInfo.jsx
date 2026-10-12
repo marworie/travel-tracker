@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react'
-import { getCountryInfo } from '../countryInfo'
+import { fetchPopulation, formatPopulation, getCountryInfo } from '../countryInfo'
 import { fetchRates, formatMoney } from '../money'
 
 // Dünya sayfasında seçilen ülkenin kısa bilgi kartı
 export default function CountryInfo({ iso, homeCurrency = 'TRY' }) {
   const [info, setInfo] = useState(null)
   const [rate, setRate] = useState(null) // 1 yerel para kaç TL
+  const [population, setPopulation] = useState(null) // { value, year }
 
   useEffect(() => {
     setInfo(null)
     setRate(null)
+    setPopulation(null)
     getCountryInfo(iso).then((data) => {
       setInfo(data)
+      if (data) fetchPopulation(data.code3).then(setPopulation).catch(() => {}) // olmazsa satır görünmez
       const currency = data?.currencies[0]?.code
       if (currency && currency !== homeCurrency) {
         fetchRates(currency).then((r) => setRate(r[homeCurrency] ?? null)).catch(() => {})
@@ -45,6 +48,12 @@ export default function CountryInfo({ iso, homeCurrency = 'TRY' }) {
         )}
         {info.languages.length > 0 && (<><dt>Diller</dt><dd>{info.languages.join(', ')}</dd></>)}
         {info.phone && (<><dt>Telefon kodu</dt><dd>{info.phone}</dd></>)}
+        {population && (
+            <>
+            <dt>Nüfus</dt>
+            <dd>{formatPopulation(population.value)} <span className="panel-hint">({population.year})</span></dd>
+            </>
+        )}
         <dt>Yüzölçümü</dt><dd>{info.area.toLocaleString('tr-TR')} km²</dd>
         {info.borders.length > 0 && (<><dt>Komşular</dt><dd>{info.borders.join(', ')}</dd></>)}
       </dl>
