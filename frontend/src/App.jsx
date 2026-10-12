@@ -12,6 +12,7 @@ import ExplorePage from './pages/ExplorePage'
 import LoginPage from './pages/LoginPage'
 import WelcomeSplash from './components/WelcomeSplash'
 import { auth } from './auth'
+import { getInitialTheme, applyTheme } from './theme'
 import ProfilePage from './pages/ProfilePage'
 import OtherCountriesPage from './pages/OtherCountriesPage'
 import CountryRegions from './components/CountryRegions'
@@ -33,6 +34,10 @@ export default function App() {
   const [openList, setOpenList] = useState(null) // 'cities' | 'countries' | 'foreign'
   const [error, setError] = useState('')
   const [showSplash, setShowSplash] = useState(false) // giriş sonrası animasyon
+  const [theme, setTheme] = useState(getInitialTheme) // 'light' | 'dark'
+
+  // Tema değişince <html> etiketine yaz ve sakla
+  useEffect(() => applyTheme(theme), [theme])
 
   const refreshStats = () => api.getStats().then(setStats)
   const reloadWishes = () => api.getWishes().then(setWishes)
@@ -155,6 +160,8 @@ export default function App() {
         onChange={(p) => { setPage(p); setOpenList(null) }}
         username={user.username}
         onLogout={handleLogout}
+        theme={theme}
+        onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
       />
 
       <main className="main">

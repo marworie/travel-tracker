@@ -15,10 +15,37 @@
   --marker: #d9a21b;     /* "gitmek istiyorum": harita işaretçisi sarısı */
   --marker-soft: #f5e8c4;
   --danger: #a3372b;
+  --danger-soft: #f8e6e3;
+  --field: #fff;         /* input ve kart zemini */
+  --on-ink: #fff;        /* koyu butonların üstündeki yazı */
+  --hover: #eff2ec;
+  --soft: #eef1ec;
 
   --radius: 6px;
   --sans: 'IBM Plex Sans', system-ui, sans-serif;
   --condensed: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;   /* tarih seçici, kaydırma çubuğu da koyu olsun */
+  --paper: #131916;
+  --surface: #1b2320;
+  --ink: #e3e9e5;
+  --muted: #9aa69f;
+  --line: #33403a;
+  --land: #2b3531;
+  --land-hover: #3a4641;
+  --visited: #3d9677;
+  --visited-soft: #213830;
+  --selected: #6ea2d4;
+  --marker: #e0ad2e;
+  --marker-soft: #3b3119;
+  --danger: #e0715f;
+  --danger-soft: #3a211c;
+  --field: #212a26;
+  --on-ink: #131916;
+  --hover: #222c28;
+  --soft: #1e2723;
 }
 
 * { box-sizing: border-box; }
@@ -38,7 +65,7 @@ button { font-family: inherit; }
 .error {
   border: 1px solid var(--danger);
   color: var(--danger);
-  background: #f8e6e3;
+  background: var(--danger-soft);
   padding: 10px 14px;
   border-radius: var(--radius);
   margin-bottom: 20px;
@@ -134,7 +161,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   cursor: pointer;
 }
 .stat-card:last-child { border-right: none; }
-.stat-card:hover { background: #eff2ec; }
+.stat-card:hover { background: var(--hover); }
 .stat-label { color: var(--muted); font-size: 0.9rem; }
 .stat-number {
   font-family: var(--condensed);
@@ -229,7 +256,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   padding: 9px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--field);
   color: var(--ink);
 }
 .city-form input { flex: 1; min-width: 0; }
@@ -249,7 +276,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   align-items: center;
   gap: 4px;
   background: var(--visited-soft);
-  color: #1f4d3d;
+  color: var(--visited);
   padding: 4px 6px 4px 10px;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -359,7 +386,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   flex-direction: column;
   gap: 6px;
 }
-.unesco-card.seen { background: #eef3ef; border-color: #b4c9bd; }
+.unesco-card.seen { background: var(--visited-soft); border-color: var(--visited); }
 .unesco-meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.85rem; }
 .cat { display: inline-flex; align-items: center; gap: 6px; }
 .cat::before { content: ''; width: 8px; height: 8px; border-radius: 50%; }
@@ -381,7 +408,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   color: var(--ink);
 }
 .unesco-actions button:hover { border-color: var(--muted); }
-.unesco-actions button.on-wanted { background: var(--marker-soft); border-color: var(--marker); color: #6a4d00; }
+.unesco-actions button.on-wanted { background: var(--marker-soft); border-color: var(--marker); color: var(--ink);  }
 .unesco-actions button.on-visited { background: var(--visited); border-color: var(--visited); color: #fff; }
 
 /* ===== Liste sayfası ===== */
@@ -441,7 +468,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   padding: 9px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--field);
   color: var(--ink);
 }
 .field input:focus, .field select:focus { outline: none; border-color: var(--selected); }
@@ -455,7 +482,8 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   font-size: 0.95rem;
   cursor: pointer;
 }
-.primary-btn:hover { background: #33403a; }
+
+.primary-btn:hover { opacity: 0.85; } 
 .form-error { color: var(--danger); margin: 8px 0 0; font-size: 0.9rem; }
 
 .trip-form, .stop-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
@@ -579,7 +607,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 .trip-card:hover { border-color: var(--muted); }
 .trip-card:hover .trip-title { text-decoration: underline; }
 .trip-card.past { opacity: 0.75; }
-.route-mini { background: #eef1ec; border-bottom: 1px solid var(--line); }
+.route-mini { background: var(--soft); border-bottom: 1px solid var(--line); }
 .route-mini svg { display: block; }
 .route-empty {
   aspect-ratio: 800 / 300;
@@ -695,7 +723,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   margin: 4px 0 0;
   font-size: 0.88rem;
   line-height: 1.5;
-  color: #3d4842;
+  color: var(--ink);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -882,7 +910,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 .profile-form { display: flex; flex-direction: column; gap: 12px; flex: 1; max-width: 460px; }
 .field textarea {
   font-family: inherit; font-size: 0.95rem; padding: 9px 12px; resize: vertical;
-  border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--field); color: var(--ink);
 }
 .field textarea:focus { outline: none; border-color: var(--selected); }
 .field-count { align-self: flex-end; font-size: 0.75rem; }
@@ -980,7 +1008,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 .activity-form { display: flex; gap: 6px; margin-top: auto; }
 .activity-form input {
   flex: 1; min-width: 0; font: inherit; font-size: 0.9rem; padding: 7px 10px;
-  border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--field);
 }
 .activity-form input:focus { outline: none; border-color: var(--selected); }
 .activity-form button {
@@ -1061,7 +1089,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 .view-currency { display: flex; align-items: center; gap: 6px; font-size: 0.88rem; color: var(--muted); }
 .view-currency select {
   font: inherit; font-size: 0.88rem; padding: 4px 8px; border: 1px solid var(--line);
-  border-radius: var(--radius); background: #fff; color: var(--ink);
+  border-radius: var(--radius); background: var(--field); color: var(--ink);
 }
 .rate-note { margin: -6px 0 10px; }
 
@@ -1127,7 +1155,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 }
 .booking-ref {
   font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85rem; letter-spacing: 0.05em;
-  border: 1px dashed var(--line); border-radius: 4px; padding: 3px 8px; background: #fff;
+  border: 1px dashed var(--line); border-radius: 4px; padding: 3px 8px; background: var(--field);
   color: var(--ink); cursor: copy;
 }
 .booking-ref:hover { border-color: var(--ink); }
@@ -1155,7 +1183,7 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 .memory-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
 .memory-head h3 { margin: 0; }
 .upload-btn {
-  border: 1px solid var(--line); background: #fff; border-radius: var(--radius);
+  border: 1px solid var(--line); background: var(--field); border-radius: var(--radius);
   padding: 6px 12px; font-size: 0.88rem; cursor: pointer;
 }
 .upload-btn:hover { border-color: var(--ink); }
@@ -1169,12 +1197,12 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 .photo:hover .photo-delete { opacity: 1; }
 .note-form textarea {
   width: 100%; font: inherit; font-size: 0.95rem; padding: 10px 12px; resize: vertical;
-  border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--field); color: var(--ink);
 }
 .note-form textarea:focus { outline: none; border-color: var(--selected); }
 .note-form-bottom { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .note-form-bottom select {
-  font: inherit; font-size: 0.9rem; padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
+  font: inherit; font-size: 0.9rem; padding: 6px 10px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--field);
 }
 .note-form-bottom .primary-btn { align-self: auto; }
 .note-list { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
@@ -1220,15 +1248,34 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 
 /* ===== İstatistikler: rozetler ===== */
 .badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-.badge { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+.badge { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--field); }
 .badge-medal {
   flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
   background: var(--land); color: #fff; font-size: 1.1rem;
 }
-.badge.earned { border-color: var(--marker); background: #fffaf0; }
+.badge.earned { border-color: var(--marker); background: var(--marker-soft); }
 .badge.earned .badge-medal { background: var(--marker); }
 .badge-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .badge-body strong { font-size: 0.95rem; }
 .badge:not(.earned) .badge-body strong { color: var(--muted); }
 .badge-desc { font-size: 0.8rem; color: var(--muted); }
 .badge-progress { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin-top: 4px; font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ===== Tema düğmesi ===== */
+.theme-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  margin-top: auto; padding: 8px 12px;   /* menünün en altına it */
+  border: none; border-radius: var(--radius); background: none;
+  color: var(--muted); font-size: 0.9rem; cursor: pointer; text-align: left;
+}
+.theme-btn + .sidebar-user { margin-top: 8px; }
+.theme-btn:hover { background: var(--hover); color: var(--ink); }
+.theme-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Karanlık modda ana butonlar beyaz yerine yeşil olsun */
+[data-theme='dark'] .primary-btn,
+[data-theme='dark'] .city-form button,
+[data-theme='dark'] .segmented button.on {
+  background: var(--visited);
+  color: #fff;
+}
