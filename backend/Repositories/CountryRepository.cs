@@ -7,9 +7,9 @@ namespace TravelTracker.Api.Repositories;
 
 public interface ICountryRepository
 {
-    Task<IEnumerable<Country>> GetVisitedAsync();
-    Task<Country> ToggleVisitedAsync(string isoNumeric, string name);
-    Task<int> GetVisitedCountAsync();
+    Task<IEnumerable<Country>> GetVisitedAsync(int userId);
+    Task<Country> ToggleVisitedAsync(int userId, string isoNumeric, string name);
+    Task<int> GetVisitedCountAsync(int userId);
 }
 
 public class CountryRepository : ICountryRepository
@@ -23,41 +23,42 @@ public class CountryRepository : ICountryRepository
 
     private IDbConnection CreateConnection() => new SqlConnection(_connectionString);
 
-    public async Task<IEnumerable<Country>> GetVisitedAsync()
+    public async Task<IEnumerable<Country>> GetVisitedAsync(int userId)
     {
         using var db = CreateConnection();
         return await db.QueryAsync<Country>(
-            "SELECT * FROM Countries WHERE IsVisited = 1 ORDER BY Name");
+            "SELECT * FROM Countries WHERE UserId = @userId AND IsVisited = 1 ORDER BY Name", new { userId });
     }
 
-    public async Task<Country> ToggleVisitedAsync(string isoNumeric, string name)
+    public async Task<Country> ToggleVisitedAsync(int userId, string isoNumeric, string name)
     {
         // Ülke tabloda yoksa "gidildi" olarak eklenir, varsa durumu tersine çevrilir.
         // Böylece 195 ülkeyi önceden elle eklemek gerekmiyor.
         const string sql = @"
-            IF EXISTS (SELECT 1 FROM Countries WHERE IsoNumeric = @isoNumeric)
+            IF EXISTS (SELECT 1 FROM Countries WHERE UserId = @userId AND IsoNumeric = @isoNumeric)
                 UPDATE Countries
                 SET IsVisited = 1 - IsVisited,
                     VisitedAt = CASE WHEN IsVisited = 0 THEN CAST(GETDATE() AS DATE) ELSE NULL END
-                WHERE IsoNumeric = @isoNumeric;
+                WHERE UserId = @userId AND IsoNumeric = @isoNumeric;
             ELSE
-                INSERT INTO Countries (IsoNumeric, Name, IsVisited, VisitedAt)
-                VALUES (@isoNumeric, @name, 1, CAST(GETDATE() AS DATE));
+                INSERT INTO Countries (UserId, IsoNumeric, Name, IsVisited, VisitedAt)
+                VALUES (@userId, @isoNumeric, @name, 1, CAST(GETDATE() AS DATE));
 
             -- Ülke 'gidilmedi' yapıldıysa o ülkenin şehirleri de silinir
             DELETE fc FROM ForeignCities fc
             JOIN Countries c ON c.Id = fc.CountryId
-            WHERE c.IsoNumeric = @isoNumeric AND c.IsVisited = 0;
+            WHERE c.UserId = @userId AND c.IsoNumeric = @isoNumeric AND c.IsVisited = 0;
 
-            SELECT * FROM Countries WHERE IsoNumeric = @isoNumeric;";
+            SELECT * FROM Countries WHERE UserId = @userId AND IsoNumeric = @isoNumeric;";
 
         using var db = CreateConnection();
-        return await db.QuerySingleAsync<Country>(sql, new { isoNumeric, name });
+        return await db.QuerySingleAsync<Country>(sql, new { userId, isoNumeric, name });
     }
 
-    public async Task<int> GetVisitedCountAsync()
+    public async Task<int> GetVisitedCountAsync(int userId)
     {
         using var db = CreateConnection();
-        return await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Countries WHERE IsVisited = 1");
+        return await db.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM Countries WHERE UserId = @userId AND IsVisited = 1", new { userId });
     }
 }

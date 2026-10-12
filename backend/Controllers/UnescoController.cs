@@ -1,3 +1,4 @@
+using TravelTracker.Api.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using TravelTracker.Api.Repositories;
 
@@ -18,7 +19,7 @@ public class UnescoController : ControllerBase
         if (string.IsNullOrWhiteSpace(iso) || iso.Length != 3)
             return BadRequest("Geçersiz ülke kodu.");
 
-        return Ok(await _repo.GetByCountryAsync(iso));
+        return Ok(await _repo.GetByCountryAsync(User.GetUserId(), iso));
     }
 
     // GET api/unesco/countries  → mirası olan ülkeler + sayıları
@@ -27,13 +28,13 @@ public class UnescoController : ControllerBase
 
     // GET api/unesco/saved  → ⭐ veya ✓ işaretlenenler
     [HttpGet("saved")]
-    public async Task<IActionResult> GetSaved() => Ok(await _repo.GetSavedAsync());
+    public async Task<IActionResult> GetSaved() => Ok(await _repo.GetSavedAsync(User.GetUserId()));
 
     // POST api/unesco/357/wanted  → ⭐ gitmek istiyorum
     [HttpPost("{id:int}/wanted")]
     public async Task<IActionResult> ToggleWanted(int id)
     {
-        var site = await _repo.ToggleAsync(id, "IsWanted");
+        var site = await _repo.ToggleAsync(User.GetUserId(), id, "IsWanted");
         return site is null ? NotFound() : Ok(site);
     }
 
@@ -41,7 +42,8 @@ public class UnescoController : ControllerBase
     [HttpPost("{id:int}/visited")]
     public async Task<IActionResult> ToggleVisited(int id)
     {
-        var site = await _repo.ToggleAsync(id, "IsVisited");
+        var site = await _repo.ToggleAsync(User.GetUserId(), id, "IsVisited");
         return site is null ? NotFound() : Ok(site);
     }
 }
+

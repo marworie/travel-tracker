@@ -7,9 +7,9 @@ namespace TravelTracker.Api.Repositories;
 
 public interface ICityRepository
 {
-    Task<IEnumerable<City>> GetAllAsync();
-    Task<City?> ToggleVisitedAsync(byte plateCode);
-    Task<int> GetVisitedCountAsync();
+    Task<IEnumerable<City>> GetAllAsync(int userId);
+    Task<City?> ToggleVisitedAsync(int userId, byte plateCode);
+    Task<int> GetVisitedCountAsync(int userId);
 }
 
 public class CityRepository : ICityRepository
@@ -23,30 +23,38 @@ public class CityRepository : ICityRepository
 
     private IDbConnection CreateConnection() => new SqlConnection(_connectionString);
 
-    public async Task<IEnumerable<City>> GetAllAsync()
+    // 81 il herkes için aynı; "gidildi mi" bilgisi kullanıcıya göre UserCities tablosundan gelir
+    private const string SelectSql = @"
+        SELECT c.Id, c.PlateCode, c.Name,
+               CAST(CASE WHEN uc.UserId IS NULL THEN 0 ELSE 1 END AS BIT) AS IsVisited,
+               uc.VisitedAt
+        FROM Cities c
+        LEFT JOIN UserCities uc ON uc.PlateCode = c.PlateCode AND uc.UserId = @userId";
+
+    public async Task<IEnumerable<City>> GetAllAsync(int userId)
     {
         using var db = CreateConnection();
-        return await db.QueryAsync<City>("SELECT * FROM Cities ORDER BY PlateCode");
+        return await db.QueryAsync<City>($"{SelectSql} ORDER BY c.PlateCode", new { userId });
     }
 
-    public async Task<City?> ToggleVisitedAsync(byte plateCode)
+    public async Task<City?> ToggleVisitedAsync(int userId, byte plateCode)
     {
-        // Gidildiyse "gidilmedi", gidilmediyse "gidildi" yapar
-        const string sql = @"
-            UPDATE Cities
-            SET IsVisited = 1 - IsVisited,
-                VisitedAt = CASE WHEN IsVisited = 0 THEN CAST(GETDATE() AS DATE) ELSE NULL END
-            WHERE PlateCode = @plateCode;
+        // Kayıt varsa sil (gidilmedi), yoksa ekle (gidildi)
+        var sql = $@"
+            IF EXISTS (SELECT 1 FROM UserCities WHERE UserId = @userId AND PlateCode = @plateCode)
+                DELETE FROM UserCities WHERE UserId = @userId AND PlateCode = @plateCode;
+            ELSE
+                INSERT INTO UserCities (UserId, PlateCode) VALUES (@userId, @plateCode);
 
-            SELECT * FROM Cities WHERE PlateCode = @plateCode;";
+            {SelectSql} WHERE c.PlateCode = @plateCode;";
 
         using var db = CreateConnection();
-        return await db.QuerySingleOrDefaultAsync<City>(sql, new { plateCode });
+        return await db.QuerySingleOrDefaultAsync<City>(sql, new { userId, plateCode });
     }
 
-    public async Task<int> GetVisitedCountAsync()
+    public async Task<int> GetVisitedCountAsync(int userId)
     {
         using var db = CreateConnection();
-        return await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM Cities WHERE IsVisited = 1");
+        return await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM UserCities WHERE UserId = @userId", new { userId });
     }
 }

@@ -7,10 +7,10 @@ namespace TravelTracker.Api.Repositories;
 
 public interface IUnescoRepository
 {
-    Task<IEnumerable<UnescoSite>> GetByCountryAsync(string countryIso);
-    Task<UnescoSite?> ToggleAsync(int id, string field);
+    Task<IEnumerable<UnescoSite>> GetByCountryAsync(int userId, string countryIso);
+    Task<UnescoSite?> ToggleAsync(int userId, int id, string field);
     Task<IEnumerable<UnescoCountry>> GetCountriesAsync();
-    Task<IEnumerable<UnescoSite>> GetSavedAsync();
+    Task<IEnumerable<UnescoSite>> GetSavedAsync(int userId);
 }
 
 public class UnescoRepository : IUnescoRepository
@@ -24,35 +24,56 @@ public class UnescoRepository : IUnescoRepository
 
     private IDbConnection CreateConnection() => new SqlConnection(_connectionString);
 
+    // Miraslar herkes için aynı; ⭐ ve ✓ işaretleri UserUnescoSites tablosundan gelir
+    private const string SelectSql = @"
+        SELECT s.Id, s.Name, s.Category, s.YearInscribed, s.Latitude, s.Longitude, s.Url, s.InDanger,
+               ISNULL(us.IsWanted, 0)  AS IsWanted,
+               ISNULL(us.IsVisited, 0) AS IsVisited";
+
+    private const string FromSql = @"
+        FROM UnescoSites s
+        LEFT JOIN UserUnescoSites us ON us.SiteId = s.Id AND us.UserId = @userId";
+
     // Bir ülkedeki tüm UNESCO mirasları (JOIN ile çoka-çok tablodan)
-    public async Task<IEnumerable<UnescoSite>> GetByCountryAsync(string countryIso)
+    public async Task<IEnumerable<UnescoSite>> GetByCountryAsync(int userId, string countryIso)
     {
-        const string sql = @"
-            SELECT s.*
-            FROM UnescoSites s
+        var sql = $@"
+            {SelectSql}
+            {FromSql}
             JOIN UnescoSiteCountries sc ON sc.SiteId = s.Id
             WHERE sc.CountryIso = @countryIso
-            ORDER BY s.IsVisited, s.Name";
+            ORDER BY ISNULL(us.IsVisited, 0), s.Name";
 
         using var db = CreateConnection();
-        return await db.QueryAsync<UnescoSite>(sql, new { countryIso });
+        return await db.QueryAsync<UnescoSite>(sql, new { userId, countryIso });
     }
 
     // field: "IsWanted" veya "IsVisited" — sadece bu ikisine izin veriyoruz
-    public async Task<UnescoSite?> ToggleAsync(int id, string field)
+    public async Task<UnescoSite?> ToggleAsync(int userId, int id, string field)
     {
         if (field != "IsWanted" && field != "IsVisited")
             throw new ArgumentException("Geçersiz alan.");
 
         var sql = $@"
-            UPDATE UnescoSites SET {field} = 1 - {field} WHERE Id = @id;
-            SELECT * FROM UnescoSites WHERE Id = @id;";
+            IF EXISTS (SELECT 1 FROM UnescoSites WHERE Id = @id)
+               AND NOT EXISTS (SELECT 1 FROM UserUnescoSites WHERE UserId = @userId AND SiteId = @id)
+                INSERT INTO UserUnescoSites (UserId, SiteId) VALUES (@userId, @id);
+
+            UPDATE UserUnescoSites SET {field} = 1 - {field}
+            WHERE UserId = @userId AND SiteId = @id;
+
+            DELETE FROM UserUnescoSites
+            WHERE UserId = @userId AND SiteId = @id AND IsWanted = 0 AND IsVisited = 0;
+
+            {SelectSql}
+            {FromSql}
+            WHERE s.Id = @id;";
 
         using var db = CreateConnection();
-        return await db.QuerySingleOrDefaultAsync<UnescoSite>(sql, new { id });
+        return await db.QuerySingleOrDefaultAsync<UnescoSite>(sql, new { userId, id });
     }
 
-    // UNESCO mirası olan ülkeler ve kaçar mirasları olduğu
+    // UNESCO mirası olan ülkeler ve kaçar mirasları olduğu (herkes için aynı)
     public async Task<IEnumerable<UnescoCountry>> GetCountriesAsync()
     {
         const string sql = @"
@@ -65,16 +86,16 @@ public class UnescoRepository : IUnescoRepository
     }
 
     // ⭐ veya ✓ işaretlenmiş miraslar (ilk ülkesiyle birlikte)
-    public async Task<IEnumerable<UnescoSite>> GetSavedAsync()
+    public async Task<IEnumerable<UnescoSite>> GetSavedAsync(int userId)
     {
-        const string sql = @"
-            SELECT s.*,
+        var sql = $@"
+            {SelectSql},
                    (SELECT TOP 1 CountryIso FROM UnescoSiteCountries WHERE SiteId = s.Id) AS CountryIso
-            FROM UnescoSites s
-            WHERE s.IsWanted = 1 OR s.IsVisited = 1
+            {FromSql}
+            WHERE us.IsWanted = 1 OR us.IsVisited = 1
             ORDER BY s.Name";
 
         using var db = CreateConnection();
-        return await db.QueryAsync<UnescoSite>(sql);
+        return await db.QueryAsync<UnescoSite>(sql, new { userId });
     }
 }

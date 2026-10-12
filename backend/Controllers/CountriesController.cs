@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using TravelTracker.Api.Extensions;
 using TravelTracker.Api.Models;
 using TravelTracker.Api.Repositories;
 
@@ -14,7 +15,7 @@ public class CountriesController : ControllerBase
 
     // GET api/countries  → sadece gidilen ülkeler
     [HttpGet]
-    public async Task<IActionResult> GetVisited() => Ok(await _repo.GetVisitedAsync());
+    public async Task<IActionResult> GetVisited() => Ok(await _repo.GetVisitedAsync(User.GetUserId()));
 
     // POST api/countries/792/toggle   body: { "name": "Turkey" }
     [HttpPost("{isoNumeric}/toggle")]
@@ -23,7 +24,7 @@ public class CountriesController : ControllerBase
         if (isoNumeric.Length != 3 || string.IsNullOrWhiteSpace(request.Name))
             return BadRequest("Geçersiz ülke bilgisi.");
 
-        var country = await _repo.ToggleVisitedAsync(isoNumeric, request.Name);
+        var country = await _repo.ToggleVisitedAsync(User.GetUserId(), isoNumeric, request.Name);
         return Ok(country);
     }
 }

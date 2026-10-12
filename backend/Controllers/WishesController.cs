@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using TravelTracker.Api.Extensions;
 using TravelTracker.Api.Models;
 using TravelTracker.Api.Repositories;
 
@@ -16,7 +17,7 @@ public class WishesController : ControllerBase
 
     // GET api/wishes
     [HttpGet]
-    public async Task<IActionResult> GetAll() => Ok(await _repo.GetAllAsync());
+    public async Task<IActionResult> GetAll() => Ok(await _repo.GetAllAsync(User.GetUserId()));
 
     // POST api/wishes
     [HttpPost]
@@ -33,19 +34,19 @@ public class WishesController : ControllerBase
         req.City = string.IsNullOrWhiteSpace(req.City) ? null : req.City.Trim();
         req.Note = string.IsNullOrWhiteSpace(req.Note) ? null : req.Note.Trim();
         req.Currency = req.Currency.ToUpperInvariant();
-        return Ok(await _repo.CreateAsync(req));
+        return Ok(await _repo.CreateAsync(User.GetUserId(), req));
     }
 
     // POST api/wishes/4/done  → gidildi / gidilmedi
     [HttpPost("{id:int}/done")]
     public async Task<IActionResult> ToggleDone(int id)
     {
-        var wish = await _repo.ToggleDoneAsync(id);
+        var wish = await _repo.ToggleDoneAsync(User.GetUserId(), id);
         return wish is null ? NotFound() : Ok(wish);
     }
 
     // DELETE api/wishes/4
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
-        => await _repo.DeleteAsync(id) ? NoContent() : NotFound();
+        => await _repo.DeleteAsync(User.GetUserId(), id) ? NoContent() : NotFound();
 }

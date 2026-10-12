@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using TravelTracker.Api.Extensions;
 using TravelTracker.Api.Models;
 using TravelTracker.Api.Repositories;
 
@@ -14,14 +15,14 @@ public class RegionsController : ControllerBase
     // GET api/regions/276 → ["Bayern", "Berlin"]
     [HttpGet("{countryIso}")]
     public async Task<IActionResult> Get(string countryIso) =>
-        Ok(await _repo.GetVisitedAsync(countryIso));
+        Ok(await _repo.GetVisitedAsync(User.GetUserId(), countryIso));
 
     // POST api/regions/276/toggle  { "regionName": "Bayern" }
     [HttpPost("{countryIso}/toggle")]
     public async Task<IActionResult> Toggle(string countryIso, [FromBody] ToggleRegionRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.RegionName)) return BadRequest("Bölge adı boş olamaz.");
-        var isVisited = await _repo.ToggleAsync(countryIso, req.RegionName.Trim());
+        var isVisited = await _repo.ToggleAsync(User.GetUserId(), countryIso, req.RegionName.Trim());
         return Ok(new { isVisited });
     }
 }

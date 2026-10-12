@@ -7,26 +7,27 @@ namespace TravelTracker.Api.Repositories;
 
 public interface ITripRepository
 {
-    Task<IEnumerable<TripDetail>> GetAllAsync();
-    Task<TripDetail?> GetByIdAsync(int id);
-    Task<Trip> CreateAsync(SaveTripRequest req);
-    Task<bool> DeleteAsync(int id);
+    Task<IEnumerable<TripDetail>> GetAllAsync(int userId);
+    Task<TripDetail?> GetByIdAsync(int userId, int id);
+    Task<bool> OwnsTripAsync(int userId, int tripId);
+    Task<Trip> CreateAsync(int userId, SaveTripRequest req);
+    Task<bool> DeleteAsync(int userId, int id);
     Task<TripStop> AddStopAsync(int tripId, AddStopRequest req);
-    Task<bool> DeleteStopAsync(int stopId);
-    Task MoveStopAsync(int stopId, bool up);
+    Task<bool> DeleteStopAsync(int userId, int stopId);
+    Task MoveStopAsync(int userId, int stopId, bool up);
     Task<TripActivity> AddActivityAsync(int tripId, AddActivityRequest req);
-    Task<bool> DeleteActivityAsync(int activityId);
+    Task<bool> DeleteActivityAsync(int userId, int activityId);
     Task SetDayCountAsync(int tripId, int dayCount);
     Task SetBudgetAsync(int tripId, SetBudgetRequest req);
     Task<TripExpense> AddExpenseAsync(int tripId, AddExpenseRequest req);
-    Task<bool> DeleteExpenseAsync(int expenseId);
+    Task<bool> DeleteExpenseAsync(int userId, int expenseId);
     Task<TripBooking> AddBookingAsync(int tripId, AddBookingRequest req);
-    Task<bool> DeleteBookingAsync(int bookingId);
+    Task<bool> DeleteBookingAsync(int userId, int bookingId);
     Task SetRatingAsync(int tripId, byte? rating);
     Task<TripNote> AddNoteAsync(int tripId, AddNoteRequest req);
-    Task<bool> DeleteNoteAsync(int noteId);
+    Task<bool> DeleteNoteAsync(int userId, int noteId);
     Task<TripFile> AddFileAsync(TripFile file);
-    Task<TripFile?> DeleteFileAsync(int fileId);
+    Task<TripFile?> DeleteFileAsync(int userId, int fileId);
 }
 
 public class TripRepository : ITripRepository
@@ -42,16 +43,26 @@ public class TripRepository : ITripRepository
 
     // Tüm geziler + durakları. İki sorguyu tek seferde çalıştırıp
     // durakları C# tarafında gezilere dağıtıyoruz (her gezi için ayrı sorgu atmamak için).
-    public async Task<IEnumerable<TripDetail>> GetAllAsync()
+    public async Task<IEnumerable<TripDetail>> GetAllAsync(int userId)
     {
+        // Sadece bu kullanıcının gezileri ve onlara ait duraklar/fotoğraflar
         const string sql = @"
             SELECT * FROM Trips
+            WHERE UserId = @userId
             ORDER BY CASE WHEN StartDate IS NULL THEN 1 ELSE 0 END, StartDate, Id;
-            SELECT * FROM TripStops ORDER BY TripId, StopOrder;
-            SELECT * FROM TripFiles WHERE Kind = 'photo' ORDER BY TripId, CreatedAt;";
+
+            SELECT s.* FROM TripStops s
+            JOIN Trips t ON t.Id = s.TripId
+            WHERE t.UserId = @userId
+            ORDER BY s.TripId, s.StopOrder;
+
+            SELECT f.* FROM TripFiles f
+            JOIN Trips t ON t.Id = f.TripId
+            WHERE t.UserId = @userId AND f.Kind = 'photo'
+            ORDER BY f.TripId, f.CreatedAt;";
 
         using var db = CreateConnection();
-        using var multi = await db.QueryMultipleAsync(sql);
+        using var multi = await db.QueryMultipleAsync(sql, new { userId });
 
         var trips = (await multi.ReadAsync<TripDetail>()).ToList();
         var stopsByTrip = (await multi.ReadAsync<TripStop>()).ToLookup(s => s.TripId);
@@ -61,16 +72,17 @@ public class TripRepository : ITripRepository
         {
             trip.Stops = stopsByTrip[trip.Id].ToList();
             trip.StopCount = trip.Stops.Count;
-            trip.Files =  photosByTrip[trip.Id].ToList(); // Anılar sayfasındaki kapak fotoğrafı için
+            trip.Files = photosByTrip[trip.Id].ToList(); // Anılar sayfasındaki kapak fotoğrafı için
         }
         return trips;
     }
 
     // QueryMultiple: tek seferde iki sorgu çalıştırıp iki sonuç seti okuyoruz
-    public async Task<TripDetail?> GetByIdAsync(int id)
+    public async Task<TripDetail?> GetByIdAsync(int userId, int id)
     {
+        // Gezi bu kullanıcının değilse ilk sorgu boş döner ve null döndürürüz
         const string sql = @"
-            SELECT * FROM Trips WHERE Id = @id;
+            SELECT * FROM Trips WHERE Id = @id AND UserId = @userId;
             SELECT * FROM TripStops WHERE TripId = @id ORDER BY StopOrder;
             SELECT * FROM TripActivities WHERE TripId = @id ORDER BY DayNumber, Id;
             SELECT * FROM TripExpenses WHERE TripId = @id ORDER BY ExpenseDate, Id;
@@ -78,9 +90,8 @@ public class TripRepository : ITripRepository
             SELECT * FROM TripNotes WHERE TripId = @id ORDER BY CreatedAt DESC;
             SELECT * FROM TripFiles WHERE TripId = @id ORDER BY CreatedAt DESC;";
 
-
         using var db = CreateConnection();
-        using var multi = await db.QueryMultipleAsync(sql, new { id });
+        using var multi = await db.QueryMultipleAsync(sql, new { userId, id });
 
         var trip = await multi.ReadSingleOrDefaultAsync<TripDetail>();
         if (trip is null) return null;
@@ -95,22 +106,34 @@ public class TripRepository : ITripRepository
         return trip;
     }
 
-    public async Task<Trip> CreateAsync(SaveTripRequest req)
+    // Gezi bu kullanıcıya mı ait? Controller, gezinin içine bir şey eklemeden önce bunu sorar.
+    public async Task<bool> OwnsTripAsync(int userId, int tripId)
     {
-        const string sql = @"
-            INSERT INTO Trips (Title, StartDate, EndDate, Note, DayCount)
-            OUTPUT INSERTED.*
-            VALUES (@Title, @StartDate, @EndDate, @Note, @DayCount);";
-
         using var db = CreateConnection();
-        return await db.QuerySingleAsync<Trip>(sql, req);
+        return await db.ExecuteScalarAsync<bool>(
+            "SELECT CAST(COUNT(*) AS BIT) FROM Trips WHERE Id = @tripId AND UserId = @userId",
+            new { userId, tripId });
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<Trip> CreateAsync(int userId, SaveTripRequest req)
+    {
+        const string sql = @"
+            INSERT INTO Trips (UserId, Title, StartDate, EndDate, Note, DayCount)
+            OUTPUT INSERTED.*
+            VALUES (@userId, @Title, @StartDate, @EndDate, @Note, @DayCount);";
+
+        using var db = CreateConnection();
+        return await db.QuerySingleAsync<Trip>(sql, new
+        {
+            userId, req.Title, req.StartDate, req.EndDate, req.Note, req.DayCount
+        });
+    }
+
+    public async Task<bool> DeleteAsync(int userId, int id)
     {
         using var db = CreateConnection();
         // ON DELETE CASCADE sayesinde duraklar da silinir
-        return await db.ExecuteAsync("DELETE FROM Trips WHERE Id = @id", new { id }) > 0;
+        return await db.ExecuteAsync("DELETE FROM Trips WHERE Id = @id AND UserId = @userId", new { userId, id }) > 0;
     }
 
     // Yeni durak listenin sonuna eklenir.
@@ -141,20 +164,30 @@ public class TripRepository : ITripRepository
         });
     }
 
-    public async Task<bool> DeleteStopAsync(int stopId)
+    // Durak, not, harcama gibi kayıtlarda UserId yok; sahibini bağlı olduğu geziden (JOIN) buluyoruz
+    public async Task<bool> DeleteStopAsync(int userId, int stopId)
     {
+        const string sql = @"
+            DELETE x FROM TripStops x
+            JOIN Trips t ON t.Id = x.TripId
+            WHERE x.Id = @stopId AND t.UserId = @userId;";
+
         using var db = CreateConnection();
-        return await db.ExecuteAsync("DELETE FROM TripStops WHERE Id = @stopId", new { stopId }) > 0;
+        return await db.ExecuteAsync(sql, new { userId, stopId }) > 0;
     }
 
     // Durağı bir üstteki veya alttaki durakla yer değiştirir.
     // İki UPDATE'in ikisi de olsun ya da hiçbiri olmasın diye transaction kullanıyoruz.
-    public async Task MoveStopAsync(int stopId, bool up)
+    public async Task MoveStopAsync(int userId, int stopId, bool up)
     {
         var sql = $@"
             DECLARE @tripId INT, @order INT, @otherId INT, @otherOrder INT;
 
-            SELECT @tripId = TripId, @order = StopOrder FROM TripStops WHERE Id = @stopId;
+            -- Durak başka kullanıcınınsa @tripId boş kalır ve hiçbir şey değişmez
+            SELECT @tripId = s.TripId, @order = s.StopOrder
+            FROM TripStops s
+            JOIN Trips t ON t.Id = s.TripId
+            WHERE s.Id = @stopId AND t.UserId = @userId;
 
             SELECT TOP 1 @otherId = Id, @otherOrder = StopOrder
             FROM TripStops
@@ -170,7 +203,7 @@ public class TripRepository : ITripRepository
         using var db = CreateConnection();
         db.Open();
         using var tx = db.BeginTransaction();
-        await db.ExecuteAsync(sql, new { stopId }, tx);
+        await db.ExecuteAsync(sql, new { userId, stopId }, tx);
         tx.Commit();
     }
 
@@ -185,10 +218,15 @@ public class TripRepository : ITripRepository
         return await db.QuerySingleAsync<TripActivity>(sql, new { tripId, req.DayNumber, req.Text });
     }
 
-    public async Task<bool> DeleteActivityAsync(int activityId)
+    public async Task<bool> DeleteActivityAsync(int userId, int activityId)
     {
+        const string sql = @"
+            DELETE x FROM TripActivities x
+            JOIN Trips t ON t.Id = x.TripId
+            WHERE x.Id = @activityId AND t.UserId = @userId;";
+
         using var db = CreateConnection();
-        return await db.ExecuteAsync("DELETE FROM TripActivities WHERE Id = @activityId", new { activityId }) > 0;
+        return await db.ExecuteAsync(sql, new { userId, activityId }) > 0;
     }
 
     // Gün sayısını değiştir. Gün azalırsa artık olmayan günlerin yapılacakları da silinir.
@@ -206,95 +244,115 @@ public class TripRepository : ITripRepository
     }
 
     public async Task SetBudgetAsync(int tripId, SetBudgetRequest req)
-{
-    const string sql = @"
-        UPDATE Trips
-        SET Budget = @Budget, Currency = @Currency, TravelerCount = @TravelerCount
-        WHERE Id = @tripId;";
-
-    using var db = CreateConnection();
-    await db.ExecuteAsync(sql, new { tripId, req.Budget, req.Currency, req.TravelerCount });
-}
-
-public async Task<TripExpense> AddExpenseAsync(int tripId, AddExpenseRequest req)
-{
-    const string sql = @"
-        INSERT INTO TripExpenses (TripId, Category, Description, Amount, Currency, ExpenseDate)
-        OUTPUT INSERTED.*
-        VALUES (@tripId, @Category, @Description, @Amount, @Currency, @ExpenseDate);";
-
-    using var db = CreateConnection();
-    return await db.QuerySingleAsync<TripExpense>(sql, new
     {
-        tripId, req.Category, req.Description, req.Amount, req.Currency, req.ExpenseDate
-    });
-}
+        const string sql = @"
+            UPDATE Trips
+            SET Budget = @Budget, Currency = @Currency, TravelerCount = @TravelerCount
+            WHERE Id = @tripId;";
 
-public async Task<bool> DeleteExpenseAsync(int expenseId)
-{
-    using var db = CreateConnection();
-    return await db.ExecuteAsync("DELETE FROM TripExpenses WHERE Id = @expenseId", new { expenseId }) > 0;
-}
+        using var db = CreateConnection();
+        await db.ExecuteAsync(sql, new { tripId, req.Budget, req.Currency, req.TravelerCount });
+    }
 
-public async Task<TripBooking> AddBookingAsync(int tripId, AddBookingRequest req)
-{
-    const string sql = @"
-        INSERT INTO TripBookings (TripId, Type, Title, StartAt, EndAt, Reference, Note)
-        OUTPUT INSERTED.*
-        VALUES (@tripId, @Type, @Title, @StartAt, @EndAt, @Reference, @Note);";
-
-    using var db = CreateConnection();
-    return await db.QuerySingleAsync<TripBooking>(sql, new
+    public async Task<TripExpense> AddExpenseAsync(int tripId, AddExpenseRequest req)
     {
-        tripId, req.Type, req.Title, req.StartAt, req.EndAt, req.Reference, req.Note
-    });
-}
+        const string sql = @"
+            INSERT INTO TripExpenses (TripId, Category, Description, Amount, Currency, ExpenseDate)
+            OUTPUT INSERTED.*
+            VALUES (@tripId, @Category, @Description, @Amount, @Currency, @ExpenseDate);";
 
-public async Task<bool> DeleteBookingAsync(int bookingId)
-{
-    using var db = CreateConnection();
-    return await db.ExecuteAsync("DELETE FROM TripBookings WHERE Id = @bookingId", new { bookingId }) > 0;
-}
-public async Task SetRatingAsync(int tripId, byte? rating)
-{
-    using var db = CreateConnection();
-    await db.ExecuteAsync("UPDATE Trips SET Rating = @rating WHERE Id = @tripId", new { tripId, rating });
-}
+        using var db = CreateConnection();
+        return await db.QuerySingleAsync<TripExpense>(sql, new
+        {
+            tripId, req.Category, req.Description, req.Amount, req.Currency, req.ExpenseDate
+        });
+    }
 
-public async Task<TripNote> AddNoteAsync(int tripId, AddNoteRequest req)
-{
-    const string sql = @"
-        INSERT INTO TripNotes (TripId, DayNumber, Text)
-        OUTPUT INSERTED.*
-        VALUES (@tripId, @DayNumber, @Text);";
+    public async Task<bool> DeleteExpenseAsync(int userId, int expenseId)
+    {
+        const string sql = @"
+            DELETE x FROM TripExpenses x
+            JOIN Trips t ON t.Id = x.TripId
+            WHERE x.Id = @expenseId AND t.UserId = @userId;";
 
-    using var db = CreateConnection();
-    return await db.QuerySingleAsync<TripNote>(sql, new { tripId, req.DayNumber, req.Text });
-}
+        using var db = CreateConnection();
+        return await db.ExecuteAsync(sql, new { userId, expenseId }) > 0;
+    }
 
-public async Task<bool> DeleteNoteAsync(int noteId)
-{
-    using var db = CreateConnection();
-    return await db.ExecuteAsync("DELETE FROM TripNotes WHERE Id = @noteId", new { noteId }) > 0;
-}
+    public async Task<TripBooking> AddBookingAsync(int tripId, AddBookingRequest req)
+    {
+        const string sql = @"
+            INSERT INTO TripBookings (TripId, Type, Title, StartAt, EndAt, Reference, Note)
+            OUTPUT INSERTED.*
+            VALUES (@tripId, @Type, @Title, @StartAt, @EndAt, @Reference, @Note);";
 
-public async Task<TripFile> AddFileAsync(TripFile file)
-{
-    const string sql = @"
-        INSERT INTO TripFiles (TripId, Kind, FileName, StoredName, ContentType, SizeBytes, Caption)
-        OUTPUT INSERTED.*
-        VALUES (@TripId, @Kind, @FileName, @StoredName, @ContentType, @SizeBytes, @Caption);";
+        using var db = CreateConnection();
+        return await db.QuerySingleAsync<TripBooking>(sql, new
+        {
+            tripId, req.Type, req.Title, req.StartAt, req.EndAt, req.Reference, req.Note
+        });
+    }
 
-    using var db = CreateConnection();
-    return await db.QuerySingleAsync<TripFile>(sql, file);
-}
+    public async Task<bool> DeleteBookingAsync(int userId, int bookingId)
+    {
+        const string sql = @"
+            DELETE x FROM TripBookings x
+            JOIN Trips t ON t.Id = x.TripId
+            WHERE x.Id = @bookingId AND t.UserId = @userId;";
 
-// Silinen kaydı geri döndürüyoruz ki controller diskteki dosyayı da silebilsin
-public async Task<TripFile?> DeleteFileAsync(int fileId)
-{
-    using var db = CreateConnection();
-    return await db.QuerySingleOrDefaultAsync<TripFile>(
-        "DELETE FROM TripFiles OUTPUT DELETED.* WHERE Id = @fileId", new { fileId });
-}
+        using var db = CreateConnection();
+        return await db.ExecuteAsync(sql, new { userId, bookingId }) > 0;
+    }
 
+    public async Task SetRatingAsync(int tripId, byte? rating)
+    {
+        using var db = CreateConnection();
+        await db.ExecuteAsync("UPDATE Trips SET Rating = @rating WHERE Id = @tripId", new { tripId, rating });
+    }
+
+    public async Task<TripNote> AddNoteAsync(int tripId, AddNoteRequest req)
+    {
+        const string sql = @"
+            INSERT INTO TripNotes (TripId, DayNumber, Text)
+            OUTPUT INSERTED.*
+            VALUES (@tripId, @DayNumber, @Text);";
+
+        using var db = CreateConnection();
+        return await db.QuerySingleAsync<TripNote>(sql, new { tripId, req.DayNumber, req.Text });
+    }
+
+    public async Task<bool> DeleteNoteAsync(int userId, int noteId)
+    {
+        const string sql = @"
+            DELETE x FROM TripNotes x
+            JOIN Trips t ON t.Id = x.TripId
+            WHERE x.Id = @noteId AND t.UserId = @userId;";
+
+        using var db = CreateConnection();
+        return await db.ExecuteAsync(sql, new { userId, noteId }) > 0;
+    }
+
+    public async Task<TripFile> AddFileAsync(TripFile file)
+    {
+        const string sql = @"
+            INSERT INTO TripFiles (TripId, Kind, FileName, StoredName, ContentType, SizeBytes, Caption)
+            OUTPUT INSERTED.*
+            VALUES (@TripId, @Kind, @FileName, @StoredName, @ContentType, @SizeBytes, @Caption);";
+
+        using var db = CreateConnection();
+        return await db.QuerySingleAsync<TripFile>(sql, file);
+    }
+
+    // Silinen kaydı geri döndürüyoruz ki controller diskteki dosyayı da silebilsin
+    public async Task<TripFile?> DeleteFileAsync(int userId, int fileId)
+    {
+        const string sql = @"
+            DELETE x OUTPUT DELETED.*
+            FROM TripFiles x
+            JOIN Trips t ON t.Id = x.TripId
+            WHERE x.Id = @fileId AND t.UserId = @userId;";
+
+        using var db = CreateConnection();
+        return await db.QuerySingleOrDefaultAsync<TripFile>(sql, new { userId, fileId });
+    }
 }

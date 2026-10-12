@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using TravelTracker.Api.Extensions;
 using TravelTracker.Api.Repositories;
 
 namespace TravelTracker.Api.Controllers;
@@ -25,9 +26,10 @@ public class StatsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> Get()
     {
-        var visitedCities = await _cities.GetVisitedCountAsync();
-        var visitedCountries = await _countries.GetVisitedCountAsync();
-        var visitedForeignCities = await _foreignCities.GetCountAsync();
+        var userId = User.GetUserId();
+        var visitedCities = await _cities.GetVisitedCountAsync(userId);
+        var visitedCountries = await _countries.GetVisitedCountAsync(userId);
+        var visitedForeignCities = await _foreignCities.GetCountAsync(userId);
 
         return Ok(new
         {

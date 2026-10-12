@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using TravelTracker.Api.Extensions;
 using TravelTracker.Api.Models;
 using TravelTracker.Api.Repositories;
 
@@ -14,7 +15,7 @@ public class ForeignCitiesController : ControllerBase
 
     // GET api/foreign-cities
     [HttpGet]
-    public async Task<IActionResult> GetAll() => Ok(await _repo.GetAllAsync());
+    public async Task<IActionResult> GetAll() => Ok(await _repo.GetAllAsync(User.GetUserId()));
 
     // POST api/foreign-cities   body: { "isoNumeric": "250", "countryName": "France", "cityName": "Paris" }
     [HttpPost]
@@ -28,7 +29,7 @@ public class ForeignCitiesController : ControllerBase
         if (cityName.Length > 100)
             return BadRequest("Şehir adı en fazla 100 karakter olabilir.");
 
-        var city = await _repo.AddAsync(request.IsoNumeric, request.CountryName, cityName);
+        var city = await _repo.AddAsync(User.GetUserId(), request.IsoNumeric, request.CountryName, cityName);
         return Ok(city);
     }
 
@@ -36,7 +37,7 @@ public class ForeignCitiesController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
-        var deleted = await _repo.DeleteAsync(id);
+        var deleted = await _repo.DeleteAsync(User.GetUserId(), id);
         return deleted ? NoContent() : NotFound();
     }
 }

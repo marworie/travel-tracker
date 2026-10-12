@@ -7,10 +7,10 @@ namespace TravelTracker.Api.Repositories;
 
 public interface IForeignCityRepository
 {
-    Task<IEnumerable<ForeignCity>> GetAllAsync();
-    Task<ForeignCity> AddAsync(string isoNumeric, string countryName, string cityName);
-    Task<bool> DeleteAsync(int id);
-    Task<int> GetCountAsync();
+    Task<IEnumerable<ForeignCity>> GetAllAsync(int userId);
+    Task<ForeignCity> AddAsync(int userId, string isoNumeric, string countryName, string cityName);
+    Task<bool> DeleteAsync(int userId, int id);
+    Task<int> GetCountAsync(int userId);
 }
 
 public class ForeignCityRepository : IForeignCityRepository
@@ -31,27 +31,27 @@ public class ForeignCityRepository : IForeignCityRepository
         FROM ForeignCities fc
         JOIN Countries c ON c.Id = fc.CountryId";
 
-    public async Task<IEnumerable<ForeignCity>> GetAllAsync()
+    public async Task<IEnumerable<ForeignCity>> GetAllAsync(int userId)
     {
         using var db = CreateConnection();
-        return await db.QueryAsync<ForeignCity>($"{SelectSql} ORDER BY c.Name, fc.Name");
+        return await db.QueryAsync<ForeignCity>($"{SelectSql} WHERE c.UserId = @userId ORDER BY c.Name, fc.Name", new { userId });
     }
 
-    public async Task<ForeignCity> AddAsync(string isoNumeric, string countryName, string cityName)
+    public async Task<ForeignCity> AddAsync(int userId, string isoNumeric, string countryName, string cityName)
     {
         // Bir ülkeye şehir eklendiyse o ülkeye gidilmiş demektir:
         // ülke yoksa eklenir, varsa "gidildi" yapılır.
         var sql = $@"
-            IF NOT EXISTS (SELECT 1 FROM Countries WHERE IsoNumeric = @isoNumeric)
-                INSERT INTO Countries (IsoNumeric, Name, IsVisited, VisitedAt)
-                VALUES (@isoNumeric, @countryName, 1, CAST(GETDATE() AS DATE));
+            IF NOT EXISTS (SELECT 1 FROM Countries WHERE UserId = @userId AND IsoNumeric = @isoNumeric)
+                INSERT INTO Countries (UserId, IsoNumeric, Name, IsVisited, VisitedAt)
+                VALUES (@userId, @isoNumeric, @countryName, 1, CAST(GETDATE() AS DATE));
             ELSE
                 UPDATE Countries
                 SET IsVisited = 1,
                     VisitedAt = COALESCE(VisitedAt, CAST(GETDATE() AS DATE))
-                WHERE IsoNumeric = @isoNumeric;
+                WHERE UserId = @userId AND IsoNumeric = @isoNumeric;
 
-            DECLARE @countryId INT = (SELECT Id FROM Countries WHERE IsoNumeric = @isoNumeric);
+            DECLARE @countryId INT = (SELECT Id FROM Countries WHERE UserId = @userId AND IsoNumeric = @isoNumeric);
 
             IF NOT EXISTS (SELECT 1 FROM ForeignCities WHERE CountryId = @countryId AND Name = @cityName)
                 INSERT INTO ForeignCities (CountryId, Name) VALUES (@countryId, @cityName);
@@ -60,19 +60,28 @@ public class ForeignCityRepository : IForeignCityRepository
             WHERE fc.CountryId = @countryId AND fc.Name = @cityName;";
 
         using var db = CreateConnection();
-        return await db.QuerySingleAsync<ForeignCity>(sql, new { isoNumeric, countryName, cityName });
+        return await db.QuerySingleAsync<ForeignCity>(sql, new { userId, isoNumeric, countryName, cityName });
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int userId, int id)
     {
+        // Şehrin sahibi, bağlı olduğu ülke satırından anlaşılır
+        const string sql = @"
+            DELETE fc FROM ForeignCities fc
+            JOIN Countries c ON c.Id = fc.CountryId
+            WHERE fc.Id = @id AND c.UserId = @userId;";
+
         using var db = CreateConnection();
-        var affected = await db.ExecuteAsync("DELETE FROM ForeignCities WHERE Id = @id", new { id });
+        var affected = await db.ExecuteAsync(sql, new { userId, id });
         return affected > 0;
     }
 
-    public async Task<int> GetCountAsync()
+    public async Task<int> GetCountAsync(int userId)
     {
         using var db = CreateConnection();
-        return await db.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM ForeignCities");
+        return await db.ExecuteScalarAsync<int>(@"
+            SELECT COUNT(*) FROM ForeignCities fc
+            JOIN Countries c ON c.Id = fc.CountryId
+            WHERE c.UserId = @userId", new { userId });
     }
 }
