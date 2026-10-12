@@ -441,14 +441,38 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 .list-sub { color: var(--muted); font-variant-numeric: tabular-nums; }
 
 /* ===== Mobil ===== */
+.mobile-bar, .menu-backdrop { display: none; }
 @media (max-width: 800px) {
   .layout { flex-direction: column; }
-  .sidebar { width: 100%; height: auto; position: static; padding: 12px; border-right: none; border-bottom: 1px solid var(--line); }
-  .brand { padding: 0 6px 10px; }
-  .sidebar nav { flex-direction: row; overflow-x: auto; }
-  .nav-item { white-space: nowrap; }
-  .nav-item.active { box-shadow: inset 0 -2px 0 var(--visited); }
-  .main { padding: 24px 16px 40px; }
+
+  /* Üstte sabit duran çubuk: ☰ butonu + logo */
+  .mobile-bar {
+    display: flex; align-items: center; gap: 8px;
+    position: sticky; top: 0; z-index: 50;
+    height: 52px; padding: 0 8px;
+    background: var(--surface); border-bottom: 1px solid var(--line);
+    font-family: var(--condensed); font-weight: 600; font-size: 1.15rem;
+  }
+  .menu-btn {
+    display: grid; place-items: center; width: 40px; height: 40px;
+    border: none; background: none; color: var(--ink); border-radius: var(--radius); cursor: pointer;
+  }
+  .menu-btn:hover { background: var(--hover); }
+  .menu-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+
+  /* Menü ekranın solunda gizli durur, .open gelince içeri kayar */
+  .sidebar {
+    position: fixed; top: 0; left: 0; z-index: 70;
+    width: 260px; height: 100dvh; overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+  .sidebar.open { transform: none; box-shadow: 0 0 40px rgba(0, 0, 0, 0.3); }
+
+  /* Menü açıkken arkadaki sayfayı karart */
+  .menu-backdrop { display: block; position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, 0.45); }
+
+  .main { width: 100%; padding: 20px 16px 40px; } /* margin:auto genişliği daraltmasın */
   .stats { grid-template-columns: 1fr; }
   .stat-card { border-right: none; border-bottom: 1px solid var(--line); }
   .stat-card:last-child { border-bottom: none; }
@@ -878,7 +902,6 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   .login-art { padding: 20px; }
   .login-map { display: none; }
   .login-tagline { font-size: 1.6rem; margin-top: 12px; }
-  .sidebar-user { margin-top: 8px; padding-top: 10px; }
 }
 .splash {
   position: fixed; inset: 0; z-index: 1000;

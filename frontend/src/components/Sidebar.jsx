@@ -68,10 +68,9 @@ const PAGES = [
   { id: 'memories', label: 'Anılar' },
   { id: 'profile', label: 'Profilim' },
 ]
-
-export default function Sidebar({ page, onChange, username, onLogout, theme, onToggleTheme }) {
+export default function Sidebar({ open, page, onChange, username, onLogout, theme, onToggleTheme }) {
   return (
-    <aside className="sidebar">
+    <aside className={open ? 'sidebar open' : 'sidebar'}>
       <div className="brand">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5V4l-6 2.5z M9 4v13 M15 6.5v13" />

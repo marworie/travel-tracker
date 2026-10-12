@@ -35,6 +35,7 @@ export default function App() {
   const [error, setError] = useState('')
   const [showSplash, setShowSplash] = useState(false) // giriş sonrası animasyon
   const [theme, setTheme] = useState(getInitialTheme) // 'light' | 'dark'
+  const [menuOpen, setMenuOpen] = useState(false) // telefonda menü açık mı
 
   // Tema değişince <html> etiketine yaz ve sakla
   useEffect(() => applyTheme(theme), [theme])
@@ -154,10 +155,19 @@ export default function App() {
 
   return (
     <div className="layout">
-        {showSplash && <WelcomeSplash username={user.username} onDone={() => setShowSplash(false)} />}      
+        {showSplash && <WelcomeSplash username={user.username} onDone={() => setShowSplash(false)} />}   
+        {/* Sadece telefonda görünür (CSS ile) */}
+        <header className="mobile-bar">
+          <button className="menu-btn" onClick={() => setMenuOpen(true)} aria-label="Menüyü aç">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+          Gezi Haritam
+        </header>
+        {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}   
         <Sidebar
+        open={menuOpen}
         page={page}
-        onChange={(p) => { setPage(p); setOpenList(null) }}
+        onChange={(p) => { setPage(p); setOpenList(null); setMenuOpen(false) }}
         username={user.username}
         onLogout={handleLogout}
         theme={theme}
