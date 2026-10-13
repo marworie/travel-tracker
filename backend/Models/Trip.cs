@@ -169,3 +169,16 @@ public class AddStopRequest
       public DateTime CreatedAt { get; set; }
       public string Url => $"/uploads/{StoredName}";   // tarayıcının dosyayı açacağı adres
   }
+
+  // Gezinin adı ve tarihleri düzenlenirken
+    public class UpdateTripRequest
+    {
+        public string Title { get; set; } = string.Empty;
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+    }
+
+    public class UpdateActivityRequest
+    {
+        public string Text { get; set; } = string.Empty;
+    }

@@ -184,7 +184,42 @@ public class TripsController : ControllerBase
         req.Currency = req.Currency.ToUpperInvariant();
         return Ok(await _repo.AddExpenseAsync(id, req));
     }
+    // PUT api/trips/3   { "title": "Japonya 2026", "startDate": "2026-10-21", "endDate": null }
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateTripRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Title)) return BadRequest("Gezi adı gerekli.");
+        if (req.StartDate.HasValue && req.EndDate.HasValue && req.EndDate < req.StartDate)
+            return BadRequest("Bitiş tarihi başlangıçtan önce olamaz.");
 
+        req.Title = req.Title.Trim();
+        var trip = await _repo.UpdateAsync(UserId, id, req);
+        return trip is null ? NotFound() : Ok(trip);
+    }
+
+    // PUT api/trips/stops/12
+    [HttpPut("stops/{stopId:int}")]
+    public async Task<IActionResult> UpdateStop(int stopId, [FromBody] AddStopRequest req)
+    {
+        if (req.CountryIso.Length != 3 || string.IsNullOrWhiteSpace(req.Place))
+            return BadRequest("Ülke ve yer adı gerekli.");
+
+        req.Place = req.Place.Trim();
+        req.Note = string.IsNullOrWhiteSpace(req.Note) ? null : req.Note.Trim();
+        var stop = await _repo.UpdateStopAsync(UserId, stopId, req);
+        return stop is null ? NotFound() : Ok(stop);
+    }
+
+    // PUT api/trips/activities/7   { "text": "Sensō-ji Tapınağı" }
+    [HttpPut("activities/{activityId:int}")]
+    public async Task<IActionResult> UpdateActivity(int activityId, [FromBody] UpdateActivityRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Text)) return BadRequest("Yapılacak boş olamaz.");
+        if (req.Text.Length > 300) return BadRequest("En fazla 300 karakter olabilir.");
+
+        var activity = await _repo.UpdateActivityAsync(UserId, activityId, req.Text.Trim());
+        return activity is null ? NotFound() : Ok(activity);
+    }
     // DELETE api/trips/expenses/9
     [HttpDelete("expenses/{expenseId:int}")]
     public async Task<IActionResult> DeleteExpense(int expenseId)

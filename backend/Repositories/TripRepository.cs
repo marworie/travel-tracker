@@ -30,6 +30,9 @@ public interface ITripRepository
     Task<TripFile> AddFileAsync(TripFile file);
     Task<TripFile?> DeleteFileAsync(int userId, int fileId);
     Task ReorderActivitiesAsync(int tripId, int dayNumber, List<int> activityIds);
+    Task<Trip?> UpdateAsync(int userId, int id, UpdateTripRequest req);
+    Task<TripStop?> UpdateStopAsync(int userId, int stopId, AddStopRequest req);
+    Task<TripActivity?> UpdateActivityAsync(int userId, int activityId, string text);
 }
 
 public class TripRepository : ITripRepository
@@ -131,6 +134,58 @@ public class TripRepository : ITripRepository
         });
     }
 
+    // Başka kullanıcının gezisiyse hiçbir satır güncellenmez ve null döner
+    public async Task<Trip?> UpdateAsync(int userId, int id, UpdateTripRequest req)
+    {
+        const string sql = @"
+            UPDATE Trips
+            SET Title = @Title, StartDate = @StartDate, EndDate = @EndDate
+            OUTPUT INSERTED.*
+            WHERE Id = @id AND UserId = @userId;";
+
+        using var db = CreateConnection();
+        return await db.QuerySingleOrDefaultAsync<Trip>(sql, new { userId, id, req.Title, req.StartDate, req.EndDate });
+    }
+
+    // Durağı düzenler. Yer adı ya da ülke değiştiyse koordinat da yeniden bulunur (eklemedeki gibi).
+    public async Task<TripStop?> UpdateStopAsync(int userId, int stopId, AddStopRequest req)
+    {
+        const string sql = @"
+            UPDATE s
+            SET CountryIso = @CountryIso, Place = @Place, StopDate = @StopDate, Note = @Note,
+                Latitude = wc.Latitude, Longitude = wc.Longitude
+            OUTPUT INSERTED.*
+            FROM TripStops s
+            JOIN Trips t ON t.Id = s.TripId
+            OUTER APPLY (
+                SELECT TOP 1 Latitude, Longitude
+                FROM WorldCities
+                WHERE CountryIso = @CountryIso
+                AND Name COLLATE Latin1_General_CI_AI = @Place COLLATE Latin1_General_CI_AI
+                ORDER BY Population DESC
+            ) AS wc
+            WHERE s.Id = @stopId AND t.UserId = @userId;";
+
+        using var db = CreateConnection();
+        return await db.QuerySingleOrDefaultAsync<TripStop>(sql, new
+        {
+            userId, stopId, req.CountryIso, req.Place, req.StopDate, req.Note
+        });
+    }
+
+    public async Task<TripActivity?> UpdateActivityAsync(int userId, int activityId, string text)
+    {
+        const string sql = @"
+            UPDATE a SET Text = @text
+            OUTPUT INSERTED.*
+            FROM TripActivities a
+            JOIN Trips t ON t.Id = a.TripId
+            WHERE a.Id = @activityId AND t.UserId = @userId;";
+
+        using var db = CreateConnection();
+        return await db.QuerySingleOrDefaultAsync<TripActivity>(sql, new { userId, activityId, text });
+    }
+    
     public async Task<bool> DeleteAsync(int userId, int id)
     {
         using var db = CreateConnection();

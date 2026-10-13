@@ -11,6 +11,8 @@ function dayDate(startDate, dayNumber) {
 
 function DayCard({ trip, dayNumber, activities, onChange, drag }) {
   const [text, setText] = useState('')
+  const [editingId, setEditingId] = useState(null) // düzenlenen maddenin id'si
+  const [editText, setEditText] = useState('')
 
   const handleAdd = async (e) => {
     e.preventDefault()
@@ -22,6 +24,21 @@ function DayCard({ trip, dayNumber, activities, onChange, drag }) {
 
   const handleDelete = async (id) => {
     await api.deleteActivity(id)
+    onChange()
+  }
+
+  const startEdit = (a) => {
+    setEditingId(a.id)
+    setEditText(a.text)
+  }
+
+  const saveEdit = async () => {
+    const id = editingId
+    setEditingId(null)
+    const original = activities.find((a) => a.id === id)
+    // Boşsa ya da değişmediyse sunucuya gitmeye gerek yok
+    if (!editText.trim() || editText.trim() === original?.text) return
+    await api.updateActivity(id, editText)
     onChange()
   }
 
@@ -76,7 +93,7 @@ function DayCard({ trip, dayNumber, activities, onChange, drag }) {
               <li
                 key={a.id}
                 className={classes}
-                draggable
+                draggable={editingId !== a.id} // yazı düzenlerken sürüklenmesin
                 onDragStart={(e) => {
                   e.dataTransfer.effectAllowed = 'move'
                   e.dataTransfer.setData('text/plain', String(a.id)) // bazı tarayıcılar bunu şart koşuyor
@@ -86,7 +103,27 @@ function DayCard({ trip, dayNumber, activities, onChange, drag }) {
                 onDragOver={(e) => handleDragOverItem(e, i)}
               >
                 <span className="drag-handle" aria-hidden="true">⋮⋮</span>
-                <span className="activity-text">{a.text}</span>
+                {editingId === a.id ? (
+                  <input
+                    className="activity-edit"
+                    autoFocus
+                    maxLength={300}
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    onBlur={saveEdit} // kutunun dışına tıklayınca kaydet
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') e.currentTarget.blur() // Enter → blur → saveEdit
+                      if (e.key === 'Escape') setEditingId(null)  // Esc → vazgeç
+                    }}
+                  />
+                ) : (
+                  <span className="activity-text" onDoubleClick={() => startEdit(a)} title="Düzenlemek için çift tıkla">
+                    {a.text}
+                  </span>
+                )}
+                {editingId !== a.id && (
+                  <button className="activity-edit-btn" onClick={() => startEdit(a)} aria-label="Düzenle">✎</button>
+                )}
                 <button className="activity-delete" onClick={() => handleDelete(a.id)} aria-label="Sil">×</button>
               </li>
             )

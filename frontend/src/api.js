@@ -121,6 +121,11 @@ export const api = {
   request(`/regions/${iso}/toggle`, { method: 'POST', body: JSON.stringify({ regionName }) }),
   getProfile: () => request('/profile'),
   updateProfile: (profile) => request('/profile', { method: 'PUT', body: JSON.stringify(profile) }),
+  updateTrip: (id, data) => request(`/trips/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateStop: (stopId, stop) =>
+    request(`/trips/stops/${stopId}`, { method: 'PUT', body: JSON.stringify(stop) }),
+  updateActivity: (activityId, text) =>
+    request(`/trips/activities/${activityId}`, { method: 'PUT', body: JSON.stringify({ text }) }),
   changePassword: (currentPassword, newPassword) =>
   send('/profile/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) }),
 }

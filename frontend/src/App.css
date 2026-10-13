@@ -1378,3 +1378,21 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
   .expense-list.category-items { display: block !important; }
   .category-arrow { display: none; }
 }
+
+/* Yapılacak düzenleme */
+.activity-list .activity-edit-btn { font-size: 0.95rem; visibility: hidden; }
+.activity-list li:hover .activity-edit-btn { visibility: visible; } /* sadece üzerine gelince görünsün */
+@media (hover: none) { .activity-list .activity-edit-btn { visibility: visible; } } /* dokunmatik ekranda hep görünsün */
+.activity-edit {
+  flex: 1; min-width: 0; font: inherit; font-size: 0.95rem; padding: 2px 6px;
+  border: 1px solid var(--selected); border-radius: 4px; background: var(--field); color: var(--ink);
+}
+.activity-edit:focus { outline: none; }
+
+/* Durak düzenleme */
+.stop.stop-editing { grid-template-columns: 32px 1fr; align-items: start; }
+.stop-edit { margin: 0; }
+
+/* Gezi adı / tarih düzenleme formu */
+.trip-head-form { margin: 0 0 22px; }
+.trip-head-form .form-error { flex-basis: 100%; margin: 0; }
