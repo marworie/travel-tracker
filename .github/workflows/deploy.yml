@@ -1,0 +1,76 @@
+# Her push'ta testleri çalıştırır; main'e push'ta testler geçerse siteyi yayınlar
+name: Test ve Yayın
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ============ 1. TEST ============
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Testleri çalıştır
+        run: dotnet test tests/TravelTracker.Tests --verbosity normal
+
+  # ============ 2. YAYIN ============
+  deploy:
+    needs: test                                   # testler geçmezse yayın yok
+    if: github.event_name == 'push'               # pull request'te yayınlama
+    runs-on: windows-latest                       # WebDeploy (msdeploy) Windows'ta çalışıyor
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # React'i derle → çıktı backend/wwwroot'a gider (vite.config.js'teki outDir)
+      - name: Frontend build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      # Şifreleri içeren ayar dosyasını GitHub Secrets'tan oluştur (repoda yok)
+      - name: appsettings.Production.json oluştur
+        shell: pwsh
+        env:
+          DB_CONNECTION: ${{ secrets.DB_CONNECTION }}
+          JWT_KEY: ${{ secrets.JWT_KEY }}
+        run: |
+          @{ ConnectionStrings = @{ Default = $env:DB_CONNECTION }; Jwt = @{ Key = $env:JWT_KEY } } |
+            ConvertTo-Json -Depth 3 | Set-Content backend/appsettings.Production.json
+
+      - name: Backend publish
+        run: dotnet publish backend -c Release -o publish
+
+      - name: MonsterASP'a yükle (WebDeploy)
+        shell: pwsh
+        env:
+          WEBDEPLOY_URL: ${{ secrets.WEBDEPLOY_URL }}
+          WEBDEPLOY_SITE: ${{ secrets.WEBDEPLOY_SITE }}
+          WEBDEPLOY_USERNAME: ${{ secrets.WEBDEPLOY_USERNAME }}
+          WEBDEPLOY_PASSWORD: ${{ secrets.WEBDEPLOY_PASSWORD }}
+        run: |
+          $msdeploy = "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
+          if (-not (Test-Path $msdeploy)) { choco install webdeploy -y --no-progress }
+
+          $source = (Resolve-Path publish).Path
+          & $msdeploy -verb:sync `
+            "-source:contentPath=$source" `
+            "-dest:contentPath=$env:WEBDEPLOY_SITE,computerName=$env:WEBDEPLOY_URL,userName=$env:WEBDEPLOY_USERNAME,password=$env:WEBDEPLOY_PASSWORD,authType=Basic" `
+            -allowUntrusted `
+            -enableRule:AppOffline `
+            -enableRule:DoNotDeleteRule
+
+          if ($LASTEXITCODE -ne 0) { exit 1 }
