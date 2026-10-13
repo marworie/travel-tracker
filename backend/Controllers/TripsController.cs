@@ -121,6 +121,29 @@ public class TripsController : ControllerBase
     public async Task<IActionResult> DeleteActivity(int activityId)
         => await _repo.DeleteActivityAsync(UserId, activityId) ? NoContent() : NotFound();
 
+    // POST api/trips/activities/7/move?direction=up
+    [HttpPost("activities/{activityId:int}/move")]
+    public async Task<IActionResult> MoveActivity(int activityId, [FromQuery] string direction)
+    {
+        if (direction != "up" && direction != "down")
+            return BadRequest("direction 'up' veya 'down' olmalı.");
+
+        await _repo.MoveActivityAsync(UserId, activityId, direction == "up");
+        return NoContent();
+    }
+
+    // PUT api/trips/3/activities/order  { "dayNumber": 2, "activityIds": [5, 2, 9] }
+    [HttpPut("{id:int}/activities/order")]
+    public async Task<IActionResult> ReorderActivities(int id, [FromBody] ReorderActivitiesRequest req)
+    {
+        var trip = await _repo.GetByIdAsync(UserId, id);
+        if (trip is null) return NotFound();
+        if (req.DayNumber < 1 || req.DayNumber > trip.DayCount) return BadRequest("Böyle bir gün yok.");
+
+        await _repo.ReorderActivitiesAsync(id, req.DayNumber, req.ActivityIds);
+        return NoContent();
+    }
+
     // PUT api/trips/3/days  { "dayCount": 5 }
     [HttpPut("{id:int}/days")]
     public async Task<IActionResult> SetDayCount(int id, [FromBody] SetDayCountRequest req)

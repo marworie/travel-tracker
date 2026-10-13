@@ -78,6 +78,10 @@ export const api = {
     addActivity: (tripId, dayNumber, text) =>
     request(`/trips/${tripId}/activities`, { method: 'POST', body: JSON.stringify({ dayNumber, text }) }),
     deleteActivity: (activityId) => send(`/trips/activities/${activityId}`, { method: 'DELETE' }),
+    reorderActivities: (tripId, dayNumber, activityIds) =>
+      send(`/trips/${tripId}/activities/order`, { method: 'PUT', body: JSON.stringify({ dayNumber, activityIds }) }),
+    moveActivity: (activityId, direction) =>
+    send(`/trips/activities/${activityId}/move?direction=${direction}`, { method: 'POST' }),
     setDayCount: (tripId, dayCount) =>
       send(`/trips/${tripId}/days`, { method: 'PUT', body: JSON.stringify({ dayCount }) }),
     setBudget: (tripId, budget) =>

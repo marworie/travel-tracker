@@ -73,13 +73,14 @@ export default function TripDetail({ id, onBack }) {
         </div>
       </div>
 
+      {/*/ Rota haritası en üstte: gezinin genel resmi ilk başta görünsün*/}
+      <TripRouteMap stops={trip.stops}/>
       <TripWeather trip={trip} />
       <TripDays trip={trip} onChange={loadTrip} />
       <TripBookings trip={trip} onChange={loadTrip} />
       <TripBudget key={trip.currency} trip={trip} onChange={loadTrip} />
 
-      <h2 className="section-title">Rota</h2>
-      <TripRouteMap stops={trip.stops} />
+      <h2 className="section-title">Duraklar</h2>
 
       {trip.stops.length === 0 ? (
         <div className="empty-card">Bu gezide henüz durak yok. Aşağıdan ilk durağı ekle.</div>

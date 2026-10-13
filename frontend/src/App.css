@@ -1023,12 +1023,24 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 .day-empty { margin: 0; color: var(--muted); font-size: 0.9rem; }
 .activity-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .activity-list li {
-  display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
-  padding-left: 12px; border-left: 2px solid var(--visited); line-height: 1.4;
+  display: flex; align-items: flex-start; gap: 6px;
+  padding: 2px 0 2px 6px; border-left: 2px solid var(--visited); line-height: 1.4;
+  cursor: grab; border-radius: 0 4px 4px 0;
 }
+.activity-list li:hover { background: var(--hover); }
+.activity-list li:active { cursor: grabbing; }
+.activity-text { flex: 1; }
+.drag-handle { color: var(--line); font-size: 0.8rem; letter-spacing: -2px; padding-top: 2px; user-select: none; }
+.activity-list li:hover .drag-handle { color: var(--muted); }
 .activity-list button { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 2px; }
-.activity-list button:hover { color: var(--danger); }
-.activity-form { display: flex; gap: 6px; margin-top: auto; }
+.activity-list .activity-delete:hover { color: var(--danger); }
+
+/* Sürükle-bırak görünümü */
+.activity-list li.dragging { opacity: 0.35; }
+.activity-list li.drop-before { box-shadow: 0 -2px 0 var(--selected); }  /* bırakılacak yere çizgi */
+.activity-list li.drop-after { box-shadow: 0 2px 0 var(--selected); }
+.day-card.drop-target { border-color: var(--selected); }
+.activity-actions { display: flex; gap: 2px; flex: none; }.activity-form { display: flex; gap: 6px; margin-top: auto; }
 .activity-form input {
   flex: 1; min-width: 0; font: inherit; font-size: 0.9rem; padding: 7px 10px;
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--field);
@@ -1090,10 +1102,25 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 .category-list { margin: 6px 0 14px; }
 .category-list li { grid-template-columns: 10em 1fr 8em; }
 .expense-form { margin-top: 0; }
+/* Kategori grupları (açılır-kapanır) */
+.category-groups { list-style: none; margin: 6px 0 14px; padding: 0; border-top: 1px solid var(--line); }
+.category-groups > li { border-bottom: 1px solid var(--line); }
+.category-row {
+  display: grid; grid-template-columns: 13em 1fr 8em; gap: 12px; align-items: center;
+  padding: 10px 4px; cursor: pointer; font-size: 0.93rem;
+}
+.category-row:hover { background: var(--hover); }
+.category-name { display: flex; align-items: baseline; gap: 6px; font-weight: 500; }
+.category-arrow { display: inline-block; color: var(--muted); font-size: 0.75rem; transition: transform 0.15s; }
+.category-groups > li.open .category-arrow { transform: rotate(90deg); }
+.expense-list.category-items { display: none; margin: 0 0 8px 22px; border-top: none; } /* iki sınıf: .expense-list'in margin'ini ezsin */
+.category-groups > li.open .expense-list.category-items { display: block; }
+.expense-list.category-items li { padding: 6px 4px; border-bottom: 1px dashed var(--line); }
+.expense-list.category-items li:last-child { border-bottom: none; }
 .amount-input { width: 120px; }
 .expense-list { list-style: none; margin: 12px 0 0; padding: 0; border-top: 1px solid var(--line); }
 .expense-list li {
-  display: grid; grid-template-columns: 7em 1fr auto 24px; gap: 12px; align-items: baseline;
+  display: grid; grid-template-columns: 1fr auto 24px; gap: 12px; align-items: baseline;
   padding: 9px 4px; border-bottom: 1px solid var(--line); font-size: 0.93rem;
 }
 .expense-cat { color: var(--muted); font-size: 0.85rem; }
@@ -1103,8 +1130,8 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 
 @media (max-width: 760px) {
   .budget-summary { grid-template-columns: 1fr 1fr; }
-  .expense-list li { grid-template-columns: 1fr auto 24px; }
-  .expense-cat { display: none; }
+  .category-row { grid-template-columns: 1fr 6em; }
+  .category-row .region-bar { display: none; }
 }
 
 /* Bütçe: gösterim para birimi */
@@ -1346,3 +1373,8 @@ h2 { font-size: 1.05rem; font-weight: 600; margin: 0 0 12px; }
 }
 
 @page { margin: 14mm; }
+
+@media print {
+  .expense-list.category-items { display: block !important; }
+  .category-arrow { display: none; }
+}

@@ -63,6 +63,7 @@ public class AddStopRequest
       public int TripId { get; set; }
       public int DayNumber { get; set; }
       public string Text { get; set; } = string.Empty;
+      public int SortOrder { get; set; }
   }
 
   public class AddActivityRequest
@@ -70,6 +71,13 @@ public class AddStopRequest
       public int DayNumber { get; set; }
       public string Text { get; set; } = string.Empty;
   }
+
+  // Sürükle-bırak sonrası bir günün yeni sırası: [5, 2, 9] → 5 birinci, 2 ikinci, 9 üçüncü
+    public class ReorderActivitiesRequest
+    {
+        public int DayNumber { get; set; }
+        public List<int> ActivityIds { get; set; } = new();
+    }
 
   public class SetDayCountRequest
   {

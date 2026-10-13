@@ -4,15 +4,14 @@ import { CURRENCIES, convert, fetchRates, formatMoney } from '../money'
 import { formatDate } from '../countryNames'
 
 export const CATEGORIES = [
+  { id: 'flight', label: 'Uçak bileti' },
   { id: 'transport', label: 'Ulaşım' },
   { id: 'stay', label: 'Konaklama' },
-  { id: 'flight', label: 'Uçak bileti' },
   { id: 'food', label: 'Yemek' },
   { id: 'activity', label: 'Etkinlik' },
   { id: 'personal', label: 'Kişisel harcamalar' },
   { id: 'other', label: 'Diğer' },
 ]
-const categoryLabel = (id) => CATEGORIES.find((c) => c.id === id)?.label ?? id
 
 export default function TripBudget({ trip, onChange }) {
   const [rates, setRates] = useState(null)
@@ -23,6 +22,13 @@ export default function TripBudget({ trip, onChange }) {
   const [expense, setExpense] = useState(emptyExpense)
   const [error, setError] = useState('')
   const [view, setView] = useState(trip.currency) // tutarların gösterileceği para birimi
+  const [openCats, setOpenCats] = useState(new Set()) // açık olan kategoriler
+
+  const toggleCat = (id) => setOpenCats((prev) => {
+    const next = new Set(prev)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
 
   // Gezinin para birimine göre kurları çek
   useEffect(() => {
@@ -36,10 +42,11 @@ export default function TripBudget({ trip, onChange }) {
   const unknown = converted.filter((e) => e.value == null).length // kuru bulunamayanlar
   const remaining = trip.budget != null ? trip.budget - spent : null
   const usedPct = trip.budget ? Math.min((spent / trip.budget) * 100, 100) : 0
-  const byCategory = CATEGORIES.map((c) => ({
-    ...c,
-    total: converted.filter((e) => e.category === c.id).reduce((sum, e) => sum + (e.value ?? 0), 0),
-  })).filter((c) => c.total > 0)
+  // Her kategori: harcamaları + toplamı (harcaması olmayan kategoriler gösterilmez)
+  const byCategory = CATEGORIES.map((c) => {
+    const items = converted.filter((e) => e.category === c.id)
+    return { ...c, items, total: items.reduce((sum, e) => sum + (e.value ?? 0), 0) }
+  }).filter((c) => c.items.length > 0)
 
   // ---- Bütçe formu ----
   const startEdit = () => {
@@ -80,22 +87,22 @@ export default function TripBudget({ trip, onChange }) {
     onChange()
   }
 
-// Gösterim: gezinin para birimindeki tutarı seçilen birime çevir (1 TRY = rates.EUR EUR)
-const factor = view === trip.currency ? 1 : rates?.[view]
-const money = (amount) => (factor ? formatMoney(amount * factor, view) : formatMoney(amount, trip.currency))
+  // Gösterim: gezinin para birimindeki tutarı seçilen birime çevir (1 TRY = rates.EUR EUR)
+  const factor = view === trip.currency ? 1 : rates?.[view]
+  const money = (amount) => (factor ? formatMoney(amount * factor, view) : formatMoney(amount, trip.currency))
 
   return (
     <section className="trip-budget">
       <div className="trip-days-head">
         <h2>Bütçe ve harcamalar</h2>
         <div className="budget-head-actions">
-        <label className="view-currency">
+          <label className="view-currency">
             Göster:
             <select value={view} onChange={(e) => setView(e.target.value)}>
-            {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
+              {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
             </select>
-        </label>
-        {!editing && <button className="link-btn" onClick={startEdit}>Bütçeyi düzenle</button>}
+          </label>
+          {!editing && <button className="link-btn" onClick={startEdit}>Bütçeyi düzenle</button>}
         </div>
       </div>
       {view !== trip.currency && factor && (
@@ -146,15 +153,49 @@ const money = (amount) => (factor ? formatMoney(amount * factor, view) : formatM
       {ratesError && <p className="form-error">Döviz kurları alınamadı; farklı para birimindeki harcamalar toplama katılmadı.</p>}
       {!ratesError && unknown > 0 && <p className="panel-hint">{unknown} harcamanın kuru bulunamadı, toplama katılmadı.</p>}
 
+      {/* Kategoriler: tıklayınca altında o kategorinin harcamaları açılır */}
       {byCategory.length > 0 && (
-        <ul className="region-list category-list">
-          {byCategory.map((c) => (
-            <li key={c.id}>
-              <span className="region-name">{c.label}</span>
-              <span className="region-bar"><span style={{ width: `${(c.total / spent) * 100}%` }} /></span>
-              <span className="region-count">{money(c.total)}</span>
-            </li>
-          ))}
+        <ul className="category-groups">
+          {byCategory.map((c) => {
+            const open = openCats.has(c.id)
+            return (
+              <li key={c.id} className={open ? 'open' : ''}>
+                <div
+                  className="category-row"
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={open}
+                  onClick={() => toggleCat(c.id)}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggleCat(c.id))}
+                >
+                  <span className="category-name">
+                    <span className="category-arrow" aria-hidden="true">▸</span>
+                    {c.label} <span className="count-pill">{c.items.length}</span>
+                  </span>
+                  <span className="region-bar"><span style={{ width: `${spent ? (c.total / spent) * 100 : 0}%` }} /></span>
+                  <span className="region-count">{money(c.total)}</span>
+                </div>
+
+                <ul className="expense-list category-items">
+                  {c.items.map((e) => (
+                    <li key={e.id}>
+                      <span className="expense-desc">
+                        {e.description || c.label}
+                        {e.expenseDate && <span className="panel-hint"> · {formatDate(e.expenseDate)}</span>}
+                      </span>
+                      <span className="expense-amount">
+                        {formatMoney(e.amount, e.currency)}
+                        {e.currency !== view && e.value != null && (
+                          <span className="panel-hint"> ≈ {money(e.value)}</span>
+                        )}
+                      </span>
+                      <button onClick={() => deleteExpense(e.id)} aria-label="Sil">×</button>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            )
+          })}
         </ul>
       )}
 
@@ -167,7 +208,7 @@ const money = (amount) => (factor ? formatMoney(amount * factor, view) : formatM
         </label>
         <label className="field grow">
           <span>Açıklama</span>
-            <input maxLength={200} value={expense.description} placeholder="İsteğe bağlı"
+          <input maxLength={200} value={expense.description} placeholder="İsteğe bağlı"
             onChange={(e) => setExpense({ ...expense, description: e.target.value })} />
         </label>
         <label className="field">
@@ -189,26 +230,6 @@ const money = (amount) => (factor ? formatMoney(amount * factor, view) : formatM
       </form>
       {error && <p className="form-error">{error}</p>}
 
-      {converted.length > 0 && (
-        <ul className="expense-list">
-          {converted.map((e) => (
-            <li key={e.id}>
-              <span className="expense-cat">{categoryLabel(e.category)}</span>
-              <span className="expense-desc">
-                {e.description || categoryLabel(e.category)}
-                {e.expenseDate && <span className="panel-hint"> · {formatDate(e.expenseDate)}</span>}
-              </span>
-              <span className="expense-amount">
-                {formatMoney(e.amount, e.currency)}
-                {e.currency !== view && e.value != null && (
-                  <span className="panel-hint"> ≈ {money(e.value)}</span>
-                )}
-              </span>
-              <button onClick={() => deleteExpense(e.id)} aria-label="Sil">×</button>
-            </li>
-          ))}
-        </ul>
-      )}
     </section>
   )
 }

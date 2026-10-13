@@ -17,6 +17,7 @@ public interface ITripRepository
     Task MoveStopAsync(int userId, int stopId, bool up);
     Task<TripActivity> AddActivityAsync(int tripId, AddActivityRequest req);
     Task<bool> DeleteActivityAsync(int userId, int activityId);
+    Task MoveActivityAsync(int userId, int activityId, bool up);
     Task SetDayCountAsync(int tripId, int dayCount);
     Task SetBudgetAsync(int tripId, SetBudgetRequest req);
     Task<TripExpense> AddExpenseAsync(int tripId, AddExpenseRequest req);
@@ -28,6 +29,7 @@ public interface ITripRepository
     Task<bool> DeleteNoteAsync(int userId, int noteId);
     Task<TripFile> AddFileAsync(TripFile file);
     Task<TripFile?> DeleteFileAsync(int userId, int fileId);
+    Task ReorderActivitiesAsync(int tripId, int dayNumber, List<int> activityIds);
 }
 
 public class TripRepository : ITripRepository
@@ -84,7 +86,7 @@ public class TripRepository : ITripRepository
         const string sql = @"
             SELECT * FROM Trips WHERE Id = @id AND UserId = @userId;
             SELECT * FROM TripStops WHERE TripId = @id ORDER BY StopOrder;
-            SELECT * FROM TripActivities WHERE TripId = @id ORDER BY DayNumber, Id;
+            SELECT * FROM TripActivities WHERE TripId = @id ORDER BY DayNumber, SortOrder, Id;
             SELECT * FROM TripExpenses WHERE TripId = @id ORDER BY ExpenseDate, Id;
             SELECT * FROM TripBookings WHERE TripId = @id ORDER BY CASE WHEN StartAt IS NULL THEN 1 ELSE 0 END, StartAt, Id;
             SELECT * FROM TripNotes WHERE TripId = @id ORDER BY CreatedAt DESC;
@@ -210,14 +212,15 @@ public class TripRepository : ITripRepository
     public async Task<TripActivity> AddActivityAsync(int tripId, AddActivityRequest req)
     {
         const string sql = @"
-            INSERT INTO TripActivities (TripId, DayNumber, Text)
+            INSERT INTO TripActivities (TripId, DayNumber, Text, SortOrder)
             OUTPUT INSERTED.*
-            VALUES (@tripId, @DayNumber, @Text);";
+            VALUES (@tripId, @DayNumber, @Text,
+                (SELECT ISNULL(MAX(SortOrder), 0) + 1 FROM TripActivities
+                WHERE TripId = @tripId AND DayNumber = @DayNumber));";
 
         using var db = CreateConnection();
         return await db.QuerySingleAsync<TripActivity>(sql, new { tripId, req.DayNumber, req.Text });
     }
-
     public async Task<bool> DeleteActivityAsync(int userId, int activityId)
     {
         const string sql = @"
@@ -228,7 +231,54 @@ public class TripRepository : ITripRepository
         using var db = CreateConnection();
         return await db.ExecuteAsync(sql, new { userId, activityId }) > 0;
     }
+    // Maddeyi aynı gündeki bir üst/alt maddeyle yer değiştirir (MoveStopAsync ile aynı mantık)
+    public async Task MoveActivityAsync(int userId, int activityId, bool up)
+    {
+        var sql = $@"
+            DECLARE @tripId INT, @day INT, @order INT, @otherId INT, @otherOrder INT;
 
+            -- Madde başka kullanıcınınsa @tripId boş kalır ve hiçbir şey değişmez
+            SELECT @tripId = a.TripId, @day = a.DayNumber, @order = a.SortOrder
+            FROM TripActivities a
+            JOIN Trips t ON t.Id = a.TripId
+            WHERE a.Id = @activityId AND t.UserId = @userId;
+
+            SELECT TOP 1 @otherId = Id, @otherOrder = SortOrder
+            FROM TripActivities
+            WHERE TripId = @tripId AND DayNumber = @day AND SortOrder {(up ? "<" : ">")} @order
+            ORDER BY SortOrder {(up ? "DESC" : "ASC")};
+
+            IF @otherId IS NOT NULL
+            BEGIN
+                UPDATE TripActivities SET SortOrder = @otherOrder WHERE Id = @activityId;
+                UPDATE TripActivities SET SortOrder = @order WHERE Id = @otherId;
+            END";
+
+        using var db = CreateConnection();
+        db.Open();
+        using var tx = db.BeginTransaction();
+        await db.ExecuteAsync(sql, new { userId, activityId }, tx);
+        tx.Commit();
+    }
+
+    // Bir günün maddelerini verilen sırayla kaydeder.
+    // Madde başka günden sürüklendiyse DayNumber'ı da değişir.
+    public async Task ReorderActivitiesAsync(int tripId, int dayNumber, List<int> activityIds)
+    {
+        const string sql = @"
+            UPDATE TripActivities
+            SET DayNumber = @dayNumber, SortOrder = @order
+            WHERE Id = @id AND TripId = @tripId;";
+
+        // Dapper'a bir liste verilince aynı SQL'i her eleman için ayrı ayrı çalıştırır
+        var rows = activityIds.Select((id, index) => new { id, order = index + 1, tripId, dayNumber });
+
+        using var db = CreateConnection();
+        db.Open();
+        using var tx = db.BeginTransaction();
+        await db.ExecuteAsync(sql, rows, tx);
+        tx.Commit();
+    }
     // Gün sayısını değiştir. Gün azalırsa artık olmayan günlerin yapılacakları da silinir.
     public async Task SetDayCountAsync(int tripId, int dayCount)
     {
@@ -356,3 +406,4 @@ public class TripRepository : ITripRepository
         return await db.QuerySingleOrDefaultAsync<TripFile>(sql, new { userId, fileId });
     }
 }
+
