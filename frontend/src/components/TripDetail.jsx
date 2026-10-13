@@ -5,6 +5,7 @@ import TripRouteMap from './TripRouteMap'
 import TripDays from './TripDays'
 import TripBudget from './TripBudget'
 import TripBookings from './TripBookings'
+import TripWeather from './TripWeather'
 
 const EMPTY_STOP = { countryIso: '792', place: '', stopDate: '', note: '' }
 
@@ -54,7 +55,7 @@ export default function TripDetail({ id, onBack }) {
 
   return (
     <>
-      <button className="back-btn" onClick={onBack}>‹ Gezi planlarına dön</button>
+      <button className="back-btn no-print" onClick={onBack}>‹ Gezi planlarına dön</button>
 
       <div className="page-head trip-head">
         <div>
@@ -65,9 +66,14 @@ export default function TripDetail({ id, onBack }) {
               : 'Tarih belirlenmedi'}
           </p>
         </div>
-        <button className="text-danger-btn" onClick={handleDeleteTrip}>Geziyi sil</button>
+        <div className="trip-head-actions no-print">
+          {/* Tarayıcının yazdırma penceresini açar; oradan "PDF olarak kaydet" de seçilebilir */}
+          <button className="link-btn" onClick={() => window.print()}>Yazdır / PDF</button>
+          <button className="text-danger-btn" onClick={handleDeleteTrip}>Geziyi sil</button>
+        </div>
       </div>
 
+      <TripWeather trip={trip} />
       <TripDays trip={trip} onChange={loadTrip} />
       <TripBookings trip={trip} onChange={loadTrip} />
       <TripBudget key={trip.currency} trip={trip} onChange={loadTrip} />
@@ -104,7 +110,7 @@ export default function TripDetail({ id, onBack }) {
         </ol>
       )}
 
-      <section className="panel">
+      <section className="panel no-print">
         <h2>Durak ekle</h2>
         <form className="stop-form" onSubmit={handleAddStop}>
           <label className="field">
