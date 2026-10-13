@@ -75,11 +75,14 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-// React (Vite) uygulamasının API'ye erişebilmesi için
+// İzin verilen adresler ayarlardan okunur: yerelde localhost, Azure'da sitenin gerçek adresi
+var allowedOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>()
+    ?? new[] { "http://localhost:5180"};
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
-        policy.WithOrigins("http://localhost:5180")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod());
 });
@@ -94,9 +97,11 @@ if (app.Environment.IsDevelopment())
 
 // Sıra önemli: CORS → kimlik doğrulama → yetkilendirme → controller'lar
 app.UseCors("Frontend");
+app.UseDefaultFiles(); // adres "/" ise wwwroot/index.html'i aç
 app.UseStaticFiles(); // wwwroot klasöründeki dosyaları (yüklenen fotoğraflar) sunar
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapGet("/", () => Results.Redirect("/swagger")).AllowAnonymous();
+if (app.Environment.IsDevelopment())
+    app.MapGet("/", () => Results.Redirect("/swagger")).AllowAnonymous();
 app.Run();

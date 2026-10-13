@@ -9,3 +9,9 @@ node_modules/
 dist/
 
 backend/wwwroot/uploads/
+
+backend/appsettings.Production.json
+backend/publish/
+backend/wwwroot/
+
+backend/publish/

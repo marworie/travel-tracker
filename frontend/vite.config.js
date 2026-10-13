@@ -7,4 +7,5 @@ export default defineConfig({
     port: 5180,
     open: true,
    },
+   build: { outDir: '../backend/wwwroot', emptyOutDir: false },
 })

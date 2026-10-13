@@ -1,7 +1,7 @@
 import { auth } from './auth'
 
-// Backend adresi — dotnet run çıktısındaki porta göre değiştir
-const API_URL = 'http://localhost:5000/api'
+// Yayında .env.production dosyasındaki adres, yerelde localhost kullanılır
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api'
 // Yüklenen dosyaların adresi: http://localhost:5000/uploads/...
 export const FILE_BASE = API_URL.replace(/\/api$/, '')
 
