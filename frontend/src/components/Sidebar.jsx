@@ -1,5 +1,5 @@
 // Sade çizgi ikonlar (24x24, stroke ile çiziliyor)
-const ICONS = {
+export const ICONS = {
   home: <path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z" />,
     stats: (
     <>

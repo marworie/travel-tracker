@@ -20,6 +20,7 @@ import { countryName } from './countryNames'
 import StatsPage from './pages/StatsPage'
 import WishlistPage from './pages/WishlistPage'
 import MemoriesPage from './pages/MemoriesPage'
+import MobileTabBar from './components/MobileTabBar'
 
 export default function App() {
   const [user, setUser] = useState(auth.get()) // { token, username } veya null
@@ -158,9 +159,7 @@ export default function App() {
         {showSplash && <WelcomeSplash username={user.username} onDone={() => setShowSplash(false)} />}   
         {/* Sadece telefonda görünür (CSS ile) */}
         <header className="mobile-bar">
-          <button className="menu-btn" onClick={() => setMenuOpen(true)} aria-label="Menüyü aç">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
-          </button>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5V4l-6 2.5z M9 4v13 M15 6.5v13" /></svg>
           Gezi Haritam
         </header>
         {menuOpen && <div className="menu-backdrop" onClick={() => setMenuOpen(false)} />}   
@@ -175,8 +174,13 @@ export default function App() {
       />
 
       <main className="main">
+      {/*/sadece telefonda görünür css ile */}
+      <MobileTabBar
+        page={page}
+        onChange={(p) => { setPage(p); setOpenList(null); setMenuOpen(false) }}
+        onMore={() => setMenuOpen(true)}
+      />
         {error && <div className="error">{error}</div>}
-
         {openList && <ListPage type={openList} onBack={() => setOpenList(null)} />}
 
         {!openList && page === 'home' && (
@@ -188,6 +192,7 @@ export default function App() {
             onNavigate={setPage}
           />
         )}
+        
         {!openList && page === 'turkey' && homeIso === '792' && (
           <>
             <div className="page-head">
