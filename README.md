@@ -1,5 +1,7 @@
 # 🗺️ Gezi Haritam — Travel Tracker
 
+![Test ve Yayın](https://github.com/marworie/travel-tracker/actions/workflows/deploy.yml/badge.svg)
+
 Türkiye'de ve dünyada gezdiğin yerleri harita üzerinde işaretleyebildiğin, gezilerini gün gün planlayıp bütçesini takip edebildiğin ve anılarını saklayabildiğin bir seyahat uygulaması.
 
 **ASP.NET Core 8 Web API + Dapper + SQL Server** ile yazılmış bir backend ve **React (Vite)** ile yazılmış bir frontend'den oluşur.
